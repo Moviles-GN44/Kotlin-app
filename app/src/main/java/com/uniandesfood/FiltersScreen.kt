@@ -13,20 +13,29 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.uniandesfood.data.model.BudgetRange
 import com.uniandesfood.ui.theme.*
+import com.uniandesfood.viewmodel.FiltersViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FiltersScreen(
+    viewModel: FiltersViewModel? = null,
     onApplyFilters: () -> Unit = {}
 ) {
-    var selectedBuilding by remember { mutableStateOf("ML") }
-    var maxWalkTime by remember { mutableFloatStateOf(10f) }
-    var selectedBudget by remember { mutableStateOf("$$ (15k - 25k COP)") }
-    var isVeganSelected by remember { mutableStateOf(false) }
-    var isGlutenFreeSelected by remember { mutableStateOf(false) }
-    var isLactoseFreeSelected by remember { mutableStateOf(false) }
-    var selectedPayment by remember { mutableStateOf("Nequi / Daviplata") }
+    val criteria = viewModel?.criteria?.collectAsState()?.value
+
+    var selectedBuilding by remember(criteria) { mutableStateOf(criteria?.selectedBuilding ?: "ML") }
+    var maxWalkTime by remember(criteria) { mutableFloatStateOf(criteria?.maxWalkTimeMinutes ?: 10f) }
+    var selectedBudget by remember(criteria) { mutableStateOf(criteria?.selectedBudget ?: BudgetRange.MEDIUM) }
+    var isVeganSelected by remember(criteria) { mutableStateOf(criteria?.isVeganSelected ?: false) }
+    var isGlutenFreeSelected by remember(criteria) { mutableStateOf(criteria?.isGlutenFreeSelected ?: false) }
+    var isLactoseFreeSelected by remember(criteria) { mutableStateOf(criteria?.isLactoseFreeSelected ?: false) }
+    var selectedPayment by remember(criteria) { mutableStateOf(criteria?.selectedPayment ?: "Nequi / Daviplata") }
+
+    LaunchedEffect(Unit) {
+        viewModel?.resetSessionTimer()
+    }
 
     Scaffold(
         topBar = {
@@ -89,7 +98,10 @@ fun FiltersScreen(
                         listOf("ML", "RGD", "Franco", "C", "W").forEach { building ->
                             FilterChip(
                                 selected = selectedBuilding == building,
-                                onClick = { selectedBuilding = building },
+                                onClick = {
+                                    selectedBuilding = building
+                                    viewModel?.onBuildingSelected(building)
+                                },
                                 label = { Text(building, style = MaterialTheme.typography.labelSmall) },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = UniandesAmber,
@@ -137,7 +149,10 @@ fun FiltersScreen(
                     }
                     Slider(
                         value = maxWalkTime,
-                        onValueChange = { maxWalkTime = it },
+                        onValueChange = {
+                            maxWalkTime = it
+                            viewModel?.onWalkTimeChanged(it)
+                        },
                         valueRange = 3f..25f,
                         steps = 4,
                         colors = SliderDefaults.colors(
@@ -178,15 +193,14 @@ fun FiltersScreen(
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(
-                            "$ (< 15k COP)",
-                            "$$ (15k - 25k COP)",
-                            "$$$ (> 25k COP)"
-                        ).forEach { budget ->
+                        BudgetRange.values().forEach { budget ->
                             FilterChip(
                                 selected = selectedBudget == budget,
-                                onClick = { selectedBudget = budget },
-                                label = { Text(budget, style = MaterialTheme.typography.bodySmall) },
+                                onClick = {
+                                    selectedBudget = budget
+                                    viewModel?.onBudgetSelected(budget)
+                                },
+                                label = { Text(budget.label, style = MaterialTheme.typography.bodySmall) },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = UniandesAmber,
                                     selectedLabelColor = ShadowGrey
@@ -245,7 +259,10 @@ fun FiltersScreen(
                         }
                         Switch(
                             checked = isVeganSelected,
-                            onCheckedChange = { isVeganSelected = it },
+                            onCheckedChange = {
+                                isVeganSelected = it
+                                viewModel?.onVeganToggled(it)
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = MintEmerald,
                                 checkedTrackColor = MintEmerald.copy(alpha = 0.5f)
@@ -276,7 +293,10 @@ fun FiltersScreen(
                         }
                         Switch(
                             checked = isGlutenFreeSelected,
-                            onCheckedChange = { isGlutenFreeSelected = it },
+                            onCheckedChange = {
+                                isGlutenFreeSelected = it
+                                viewModel?.onGlutenFreeToggled(it)
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = MintEmerald,
                                 checkedTrackColor = MintEmerald.copy(alpha = 0.5f)
@@ -307,7 +327,10 @@ fun FiltersScreen(
                         }
                         Switch(
                             checked = isLactoseFreeSelected,
-                            onCheckedChange = { isLactoseFreeSelected = it },
+                            onCheckedChange = {
+                                isLactoseFreeSelected = it
+                                viewModel?.onLactoseFreeToggled(it)
+                            },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = MintEmerald,
                                 checkedTrackColor = MintEmerald.copy(alpha = 0.5f)
@@ -348,7 +371,10 @@ fun FiltersScreen(
                         listOf("Nequi / Daviplata", "Cards", "Cash").forEach { payment ->
                             FilterChip(
                                 selected = selectedPayment == payment,
-                                onClick = { selectedPayment = payment },
+                                onClick = {
+                                    selectedPayment = payment
+                                    viewModel?.onPaymentSelected(payment)
+                                },
                                 label = { Text(payment, style = MaterialTheme.typography.bodySmall) },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = UniandesAmber,
@@ -362,7 +388,10 @@ fun FiltersScreen(
 
             // Apply Button
             Button(
-                onClick = onApplyFilters,
+                onClick = {
+                    viewModel?.applyFilters()
+                    onApplyFilters()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
