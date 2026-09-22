@@ -151,6 +151,45 @@ fun MainAppContainer(
                         indicatorColor = UniandesAmber
                     )
                 )
+
+                NavigationBarItem(
+                    selected = currentScreen == 2,
+                    onClick = { currentScreen = 2 },
+                    label = { Text("Explore", fontWeight = FontWeight.SemiBold) },
+                    icon = {
+                        
+                        Icon(
+                            painter = painterResource(
+                                id = if (currentScreen == 2) R.drawable.ic_explore_filled else R.drawable.ic_explore
+                            ),
+                            contentDescription = "Explore",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedTextColor = ShadowGrey,
+                        selectedIconColor = ShadowGrey,
+                        indicatorColor = UniandesAmber
+                    )
+                )
+
+                NavigationBarItem(
+                    selected = currentScreen == 3,
+                    onClick = { currentScreen = 3 },
+                    label = { Text("Scan QR", fontWeight = FontWeight.SemiBold) },
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_qr_scan),
+                            contentDescription = "Scan QR",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedTextColor = ShadowGrey,
+                        selectedIconColor = ShadowGrey,
+                        indicatorColor = UniandesAmber
+                    )
+                )
             }
         }
     ) { innerPadding ->
