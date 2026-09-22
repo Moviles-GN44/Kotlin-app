@@ -13,7 +13,9 @@ val LavenderBlush = Color(0xFFFCEFEF)
 // Wait-time Semantics (Traffic-light states)
 val StatusFastGreen = Color(0xFF22C55E)
 val StatusMediumAmber = Color(0xFFF59E0B)
+val StatusModerateAmber = Color(0xFFF59E0B)
 val StatusSlowRed = Color(0xFFEF4444)
+val StatusLongRed = Color(0xFFEF4444)
 
 // Dietary & Accent Tags
 val TagVeganGreen = Color(0xFF10B981)

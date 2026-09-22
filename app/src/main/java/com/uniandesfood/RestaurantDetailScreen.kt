@@ -5,7 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -13,46 +13,62 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.uniandesfood.data.model.MenuItem
+import com.uniandesfood.data.model.Restaurant
+import com.uniandesfood.data.model.WaitTimeCategory
 import com.uniandesfood.ui.theme.*
-
-data class MenuItem(
-    val name: String,
-    val description: String,
-    val price: String,
-    val isVegan: Boolean,
-    val isGlutenFree: Boolean = false
-)
+import com.uniandesfood.viewmodel.RestaurantViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RestaurantDetailScreen(
+    viewModel: RestaurantViewModel? = null,
     onBack: () -> Unit = {},
     onScanQR: () -> Unit = {}
 ) {
-    val menuDishes = listOf(
+    val selectedRestaurant = viewModel?.selectedRestaurant?.collectAsState()?.value
+
+    val restaurantName = selectedRestaurant?.name ?: "One Burrito - ML"
+    val waitTimeLabel = selectedRestaurant?.waitTimeLabel ?: "< 5 MIN WAIT"
+    val waitTimeCategory = selectedRestaurant?.waitTimeCategory ?: WaitTimeCategory.FAST
+    val ratingText = "${selectedRestaurant?.rating ?: 4.7} (${selectedRestaurant?.reviewCount ?: 128} verified student reviews)"
+    val walkTimeText = "2 min walk from ${selectedRestaurant?.buildingTag ?: "ML"} Building"
+    val paymentsText = "Accepts: ${(selectedRestaurant?.paymentMethods ?: listOf("Nequi", "Daviplata", "Cards", "Cash")).joinToString(", ")}"
+
+    val menuDishes = selectedRestaurant?.menu?.ifEmpty { null } ?: listOf(
         MenuItem(
+            id = "d1",
             name = "Criollo Student Bowl",
             description = "Rice, red beans, sweet plantains, grilled chicken & fresh garden salad.",
-            price = "$15,500 COP",
-            isVegan = false
+            priceCOP = 15500,
+            formattedPrice = "$15,500 COP",
+            isVegan = false,
+            isGlutenFree = false
         ),
         MenuItem(
+            id = "d2",
             name = "Express Mixed Burrito",
             description = "Artisanal flour tortilla with seasoned shredded beef, guacamole & pico de gallo.",
-            price = "$17,000 COP",
-            isVegan = false
+            priceCOP = 17000,
+            formattedPrice = "$17,000 COP",
+            isVegan = false,
+            isGlutenFree = false
         ),
         MenuItem(
+            id = "d3",
             name = "Quinoa & Avocado Bowl",
             description = "Fresh mixed greens, crispy quinoa, cherry tomatoes & tahini-lime dressing.",
-            price = "$16,000 COP",
+            priceCOP = 16000,
+            formattedPrice = "$16,000 COP",
             isVegan = true,
             isGlutenFree = true
         ),
         MenuItem(
+            id = "d4",
             name = "Coffee & Baked Empanada Combo",
             description = "8oz hot Americano coffee with baked spinach & ricotta empanada.",
-            price = "$7,500 COP",
+            priceCOP = 7500,
+            formattedPrice = "$7,500 COP",
             isVegan = false,
             isGlutenFree = false
         )
@@ -129,13 +145,18 @@ fun RestaurantDetailScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "One Burrito - ML",
+                                text = restaurantName,
                                 style = MaterialTheme.typography.headlineLarge.copy(fontSize = 22.sp),
                                 color = ShadowGrey
                             )
                             // Traffic-light Wait Time Badge
+                            val statusColor = when (waitTimeCategory) {
+                                WaitTimeCategory.FAST -> StatusFastGreen
+                                WaitTimeCategory.MODERATE -> StatusModerateAmber
+                                WaitTimeCategory.LONG -> StatusLongRed
+                            }
                             Surface(
-                                color = StatusFastGreen.copy(alpha = 0.15f),
+                                color = statusColor.copy(alpha = 0.15f),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Row(
@@ -145,13 +166,13 @@ fun RestaurantDetailScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.ic_wait_fast_filled),
-                                        contentDescription = "Fast queue",
-                                        tint = StatusFastGreen,
+                                        contentDescription = "Wait time queue",
+                                        tint = statusColor,
                                         modifier = Modifier.size(13.dp)
                                     )
                                     Text(
-                                        text = "< 5 MIN WAIT",
-                                        color = StatusFastGreen,
+                                        text = waitTimeLabel,
+                                        color = statusColor,
                                         style = MaterialTheme.typography.labelSmall
                                     )
                                 }
@@ -170,7 +191,7 @@ fun RestaurantDetailScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = "4.7 (128 verified student reviews)",
+                                text = ratingText,
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                                 color = UniandesAmber
                             )
@@ -195,7 +216,7 @@ fun RestaurantDetailScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = "2 min walk from Mario Laserna Building (ML)",
+                                text = walkTimeText,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = TextPrimary
                             )
@@ -213,7 +234,7 @@ fun RestaurantDetailScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = "Accepts: Nequi, Daviplata, Cards, Cash",
+                                text = paymentsText,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = TextMuted
                             )
@@ -251,7 +272,7 @@ fun RestaurantDetailScreen(
                                 .padding(end = 8.dp)
                         ) {
                             Text(
-                                dish.name,
+                                text = dish.name,
                                 style = MaterialTheme.typography.titleMedium,
                                 color = ShadowGrey
                             )
@@ -324,7 +345,7 @@ fun RestaurantDetailScreen(
                         }
 
                         Text(
-                            text = dish.price,
+                            text = dish.formattedPrice,
                             style = MaterialTheme.typography.titleLarge,
                             color = UniandesAmber
                         )
