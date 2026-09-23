@@ -28,11 +28,13 @@ fun RestaurantDetailScreen(
 ) {
     val selectedRestaurant = viewModel?.selectedRestaurant?.collectAsState()?.value
 
+    val currentBuilding = viewModel?.currentBuilding ?: (selectedRestaurant?.buildingTag ?: "ML")
+    val walkMinutes = selectedRestaurant?.walkDistancesFromBuilding?.get(currentBuilding) ?: 2
     val restaurantName = selectedRestaurant?.name ?: "One Burrito - ML"
     val waitTimeLabel = selectedRestaurant?.waitTimeLabel ?: "< 5 MIN WAIT"
     val waitTimeCategory = selectedRestaurant?.waitTimeCategory ?: WaitTimeCategory.FAST
     val ratingText = "${selectedRestaurant?.rating ?: 4.7} (${selectedRestaurant?.reviewCount ?: 128} verified student reviews)"
-    val walkTimeText = "2 min walk from ${selectedRestaurant?.buildingTag ?: "ML"} Building"
+    val walkTimeText = "$walkMinutes min walk from $currentBuilding Building"
     val paymentsText = "Accepts: ${(selectedRestaurant?.paymentMethods ?: listOf("Nequi", "Daviplata", "Cards", "Cash")).joinToString(", ")}"
 
     val menuDishes = selectedRestaurant?.menu?.ifEmpty { null } ?: listOf(

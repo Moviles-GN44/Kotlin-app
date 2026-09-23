@@ -21,7 +21,8 @@ import com.uniandesfood.viewmodel.FiltersViewModel
 @Composable
 fun FiltersScreen(
     viewModel: FiltersViewModel? = null,
-    onApplyFilters: () -> Unit = {}
+    onApplyFilters: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val criteria = viewModel?.criteria?.collectAsState()?.value
 
@@ -46,6 +47,15 @@ fun FiltersScreen(
                         style = MaterialTheme.typography.headlineMedium,
                         color = ShadowGrey
                     )
+                },
+                actions = {
+                    TextButton(onClick = onLogout) {
+                        Text(
+                            text = "Sign Out",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = StatusLongRed
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = CardSurfaceWhite)
             )

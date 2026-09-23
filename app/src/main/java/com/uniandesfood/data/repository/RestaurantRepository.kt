@@ -189,6 +189,7 @@ class RestaurantRepository(
 
     /**
      * Context-aware memory-efficient filter (RAM optimized)
+     * Filters and sorts by shortest walking distance to the chosen campus building.
      */
     fun filterRestaurants(criteria: FilterCriteria): List<Restaurant> {
         return _restaurantsFlow.value.filter { restaurant ->
@@ -206,6 +207,6 @@ class RestaurantRepository(
             val matchesLactoseFree = !criteria.isLactoseFreeSelected || restaurant.isLactoseFreeFriendly
 
             matchesWalkTime && matchesBudget && matchesVegan && matchesGlutenFree && matchesLactoseFree
-        }
+        }.sortedBy { it.walkDistancesFromBuilding[criteria.selectedBuilding] ?: 99 }
     }
 }

@@ -54,7 +54,30 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            if (uiState.isRegistering) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    IconButton(onClick = { viewModel?.toggleAuthMode() }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_profile_filled),
+                            contentDescription = "Back to Sign In",
+                            tint = UniandesAmber
+                        )
+                    }
+                    TextButton(onClick = { viewModel?.toggleAuthMode() }) {
+                        Text(
+                            text = "← Back to Sign In",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = UniandesAmber
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            } else {
+                Spacer(modifier = Modifier.height(24.dp))
+            }
 
             // Logo Icon & Title
             Surface(
