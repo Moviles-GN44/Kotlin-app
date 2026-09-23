@@ -1,11 +1,19 @@
 package com.uniandesfood.data.repository
 
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.uniandesfood.data.model.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
-class RestaurantRepository {
+class RestaurantRepository(
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+) {
 
     private val sampleRestaurants = listOf(
         Restaurant(
@@ -127,17 +135,63 @@ class RestaurantRepository {
     private val _restaurantsFlow = MutableStateFlow(sampleRestaurants)
     val restaurantsFlow: Flow<List<Restaurant>> = _restaurantsFlow.asStateFlow()
 
-    fun getAllRestaurants(): List<Restaurant> = sampleRestaurants
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+
+    init {
+        listenToFirestoreRestaurants()
+    }
+
+    private fun listenToFirestoreRestaurants() {
+        try {
+            firestore.collection("restaurants")
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null && !snapshot.isEmpty) {
+                        val list = snapshot.documents.mapNotNull { doc ->
+                            doc.data?.let { Restaurant.fromMap(it) }
+                        }
+                        if (list.isNotEmpty()) {
+                            _restaurantsFlow.value = list
+                        }
+                    } else if (snapshot != null && snapshot.isEmpty) {
+                        // Automatically seed initial data to Firestore if empty
+                        coroutineScope.launch {
+                            seedInitialData()
+                        }
+                    }
+                }
+        } catch (_: Exception) {
+            // Fallback to local memory cache
+        }
+    }
+
+    suspend fun seedInitialData() {
+        try {
+            val batch = firestore.batch()
+            for (restaurant in sampleRestaurants) {
+                val docRef = firestore.collection("restaurants").document(restaurant.id)
+                batch.set(docRef, restaurant.toMap(), SetOptions.merge())
+            }
+            batch.commit().await()
+        } catch (_: Exception) {
+            // Non-fatal if offline
+        }
+    }
+
+    fun getAllRestaurants(): List<Restaurant> = _restaurantsFlow.value
 
     fun getRestaurantById(id: String): Restaurant? {
-        return sampleRestaurants.find { it.id == id } ?: sampleRestaurants.firstOrNull()
+        val currentList = _restaurantsFlow.value
+        return currentList.find { it.id == id } ?: currentList.firstOrNull()
     }
 
     /**
      * Context-aware memory-efficient filter (RAM optimized)
      */
     fun filterRestaurants(criteria: FilterCriteria): List<Restaurant> {
-        return sampleRestaurants.filter { restaurant ->
+        return _restaurantsFlow.value.filter { restaurant ->
             val walkTime = restaurant.walkDistancesFromBuilding[criteria.selectedBuilding] ?: 15
             val matchesWalkTime = walkTime <= criteria.maxWalkTimeMinutes.toInt()
             
