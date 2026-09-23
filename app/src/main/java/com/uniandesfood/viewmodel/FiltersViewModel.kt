@@ -50,18 +50,23 @@ class FiltersViewModel(
     }
 
     fun applyFilters(): FilterCriteria {
-        val durationSec = (System.currentTimeMillis() - filterSessionStartTime) / 1000
+        val durationSec = ((System.currentTimeMillis() - filterSessionStartTime) / 1000).coerceAtLeast(1)
         val activeFiltersCount = listOf(
             _criteria.value.isVeganSelected,
             _criteria.value.isGlutenFreeSelected,
             _criteria.value.isLactoseFreeSelected
         ).count { it } + 2
 
-        // Record Samuel's Type 2 BQ
+        // Record Samuel's Type 2 BQ with complete analytical parameters
         analyticsRepository.logFilterSession(
             selectedBuilding = _criteria.value.selectedBuilding,
             durationSeconds = durationSec,
-            filtersAppliedCount = activeFiltersCount
+            filtersAppliedCount = activeFiltersCount,
+            maxWalkTimeMinutes = _criteria.value.maxWalkTimeMinutes,
+            budgetRange = _criteria.value.selectedBudget.name,
+            isVegan = _criteria.value.isVeganSelected,
+            isGlutenFree = _criteria.value.isGlutenFreeSelected,
+            isLactoseFree = _criteria.value.isLactoseFreeSelected
         )
         return _criteria.value
     }
