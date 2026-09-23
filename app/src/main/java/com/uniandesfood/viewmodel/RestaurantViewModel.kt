@@ -1,6 +1,7 @@
 package com.uniandesfood.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.uniandesfood.data.model.FilterCriteria
 import com.uniandesfood.data.model.Restaurant
 import com.uniandesfood.data.repository.AnalyticsRepository
@@ -8,6 +9,7 @@ import com.uniandesfood.data.repository.RestaurantRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class RestaurantViewModel(
     private val restaurantRepository: RestaurantRepository = RestaurantRepository(),
@@ -20,8 +22,27 @@ class RestaurantViewModel(
     private val _selectedRestaurant = MutableStateFlow<Restaurant?>(restaurantRepository.getAllRestaurants().firstOrNull())
     val selectedRestaurant: StateFlow<Restaurant?> = _selectedRestaurant.asStateFlow()
 
+    private var currentCriteria: FilterCriteria? = null
+
+    init {
+        viewModelScope.launch {
+            restaurantRepository.restaurantsFlow.collect { list ->
+                if (currentCriteria != null) {
+                    _restaurants.value = restaurantRepository.filterRestaurants(currentCriteria!!)
+                } else {
+                    _restaurants.value = list
+                }
+                if (_selectedRestaurant.value == null || !_restaurants.value.any { it.id == _selectedRestaurant.value?.id }) {
+                    _selectedRestaurant.value = _restaurants.value.firstOrNull()
+                }
+            }
+        }
+    }
+
     fun filterRestaurants(criteria: FilterCriteria) {
+        currentCriteria = criteria
         _restaurants.value = restaurantRepository.filterRestaurants(criteria)
+        _selectedRestaurant.value = _restaurants.value.firstOrNull()
     }
 
     fun selectRestaurant(restaurantId: String) {

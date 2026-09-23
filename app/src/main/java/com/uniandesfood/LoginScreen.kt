@@ -1,5 +1,6 @@
 package com.uniandesfood
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -85,7 +86,7 @@ fun LoginScreen(
                 color = TextMuted
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Card Container for Form
             Card(
@@ -100,10 +101,37 @@ fun LoginScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Student Sign In",
+                        text = if (uiState.isRegistering) "Create Student Account" else "Student Sign In",
                         style = MaterialTheme.typography.headlineMedium,
                         color = ShadowGrey
                     )
+
+                    // Display Name (when registering)
+                    AnimatedVisibility(visible = uiState.isRegistering) {
+                        Column {
+                            OutlinedTextField(
+                                value = uiState.displayName,
+                                onValueChange = { viewModel?.onDisplayNameChange(it) },
+                                label = { Text("Full Name", style = MaterialTheme.typography.bodySmall) },
+                                placeholder = { Text("Samuel Carrillo", style = MaterialTheme.typography.bodySmall) },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Text,
+                                    imeAction = ImeAction.Next
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = UniandesAmber,
+                                    focusedLabelColor = UniandesAmber
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                    }
 
                     // Email Input Field
                     Column {
@@ -166,7 +194,7 @@ fun LoginScreen(
                             keyboardActions = KeyboardActions(
                                 onDone = {
                                     focusManager.clearFocus()
-                                    viewModel?.login()
+                                    viewModel?.submit()
                                 }
                             ),
                             trailingIcon = {
@@ -222,11 +250,11 @@ fun LoginScreen(
                         }
                     }
 
-                    // Sign In Button
+                    // Primary Action Button (Sign In / Register)
                     Button(
                         onClick = {
                             focusManager.clearFocus()
-                            viewModel?.login()
+                            viewModel?.submit()
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -243,16 +271,28 @@ fun LoginScreen(
                             )
                         } else {
                             Text(
-                                text = "Sign In & Explore Campus",
+                                text = if (uiState.isRegistering) "Register & Start" else "Sign In & Explore Campus",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = ShadowGrey
                             )
                         }
                     }
+
+                    // Toggle Register / Login mode
+                    TextButton(
+                        onClick = { viewModel?.toggleAuthMode() },
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) {
+                        Text(
+                            text = if (uiState.isRegistering) "Already registered? Sign In" else "New student? Create an account",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                            color = TextSecondary
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Quick bypass for testing / guest
             TextButton(
