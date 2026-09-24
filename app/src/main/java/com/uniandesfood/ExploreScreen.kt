@@ -22,10 +22,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.uniandesfood.ui.theme.*
+import com.uniandesfood.viewmodel.RestaurantViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExploreScreen(
+    viewModel: RestaurantViewModel? = null,
     onApplyFilters: () -> Unit = {}
 ) {
 
@@ -45,6 +47,7 @@ fun ExploreScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(BackgroundOffWhite)
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
@@ -68,7 +71,10 @@ fun ExploreScreen(
                 CategoriaChip(
                     texto = categoria,
                     seleccionado = categoriaSeleccionada == categoria,
-                    onClick = { categoriaSeleccionada = categoria }
+                    onClick = {
+                        categoriaSeleccionada = categoria
+                        viewModel?.filterByCategory(categoria)
+                    }
                 )
             }
         }
@@ -250,7 +256,10 @@ fun ExploreScreen(
                 Spacer(modifier = Modifier.height(22.dp))
 
                 Button(
-                    onClick = onApplyFilters,
+                    onClick = {
+                        viewModel?.filterByCategory(categoriaSeleccionada)
+                        onApplyFilters()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),

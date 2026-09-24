@@ -50,7 +50,14 @@ class RestaurantViewModel(
         currentBuilding = criteria.selectedBuilding
         val filtered = restaurantRepository.filterRestaurants(criteria)
         _restaurants.value = filtered
-        _selectedRestaurant.value = filtered.firstOrNull() ?: restaurantRepository.getAllRestaurants().firstOrNull()
+        _selectedRestaurant.value = filtered.firstOrNull()
+    }
+
+    fun filterByCategory(category: String) {
+        currentCriteria = null
+        val filtered = restaurantRepository.filterByCategory(category)
+        _restaurants.value = filtered
+        _selectedRestaurant.value = filtered.firstOrNull()
     }
 
     fun selectRestaurant(restaurantId: String) {

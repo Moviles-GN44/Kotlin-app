@@ -9,6 +9,7 @@ enum class WaitTimeCategory {
 data class Restaurant(
     val id: String = "",
     val name: String = "",
+    val category: String = "Fast Food",
     val buildingTag: String = "",
     val walkDistancesFromBuilding: Map<String, Int> = mapOf("ML" to 2, "RGD" to 4, "Franco" to 6, "C" to 5, "W" to 8),
     val waitTimeCategory: WaitTimeCategory = WaitTimeCategory.FAST,
@@ -26,6 +27,7 @@ data class Restaurant(
         return mapOf(
             "id" to id,
             "name" to name,
+            "category" to category,
             "buildingTag" to buildingTag,
             "walkDistancesFromBuilding" to walkDistancesFromBuilding,
             "waitTimeCategory" to waitTimeCategory.name,
@@ -53,6 +55,7 @@ data class Restaurant(
             return Restaurant(
                 id = map["id"] as? String ?: "",
                 name = map["name"] as? String ?: "",
+                category = map["category"] as? String ?: "Fast Food",
                 buildingTag = map["buildingTag"] as? String ?: "",
                 walkDistancesFromBuilding = (map["walkDistancesFromBuilding"] as? Map<String, Number>)
                     ?.mapValues { it.value.toInt() } ?: mapOf("ML" to 2, "RGD" to 4, "Franco" to 6, "C" to 5, "W" to 8),

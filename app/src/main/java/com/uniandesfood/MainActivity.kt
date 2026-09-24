@@ -183,6 +183,7 @@ fun MainAppContainer(
                         }
                     )
                     2 -> ExploreScreen(
+                        viewModel = restaurantViewModel,
                         onApplyFilters = {
                             currentScreen = 1
                         }
