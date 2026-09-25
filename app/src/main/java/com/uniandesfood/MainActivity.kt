@@ -59,7 +59,11 @@ fun MainAppHost(
     } else {
         MainAppContainer(
             filtersViewModel = filtersViewModel,
-            restaurantViewModel = restaurantViewModel
+            restaurantViewModel = restaurantViewModel,
+            onLogout = {
+                isGuestUser = false
+                authViewModel.logout()
+            }
         )
     }
 }
@@ -67,7 +71,8 @@ fun MainAppHost(
 @Composable
 fun MainAppContainer(
     filtersViewModel: FiltersViewModel,
-    restaurantViewModel: RestaurantViewModel
+    restaurantViewModel: RestaurantViewModel,
+    onLogout: () -> Unit = {}
 ) {
     var currentScreen by remember { mutableIntStateOf(0) }
 
@@ -167,7 +172,8 @@ fun MainAppContainer(
                             val criteria = filtersViewModel.criteria.value
                             restaurantViewModel.filterRestaurants(criteria)
                             currentScreen = 1 // Navigate to Detail
-                        }
+                        },
+                        onLogout = onLogout
                     )
                     1 -> RestaurantDetailScreen(
                         viewModel = restaurantViewModel,
@@ -177,6 +183,7 @@ fun MainAppContainer(
                         }
                     )
                     2 -> ExploreScreen(
+                        viewModel = restaurantViewModel,
                         onApplyFilters = {
                             currentScreen = 1
                         }

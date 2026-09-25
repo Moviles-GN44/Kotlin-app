@@ -3,6 +3,7 @@ package com.uniandesfood
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,11 +22,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.uniandesfood.ui.theme.*
-
+import com.uniandesfood.viewmodel.RestaurantViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExploreScreen(
+    viewModel: RestaurantViewModel? = null,
     onApplyFilters: () -> Unit = {}
 ) {
 
@@ -45,6 +47,7 @@ fun ExploreScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(BackgroundOffWhite)
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
@@ -57,12 +60,21 @@ fun ExploreScreen(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Executive Lunch", "Fast Food", "Healthy", "Pos").forEach { categoria ->
+        // Horizontally scrollable categories row with full clean names
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf("Executive Lunch", "Fast Food", "Healthy", "Desserts", "Café").forEach { categoria ->
                 CategoriaChip(
                     texto = categoria,
                     seleccionado = categoriaSeleccionada == categoria,
-                    onClick = { categoriaSeleccionada = categoria }
+                    onClick = {
+                        categoriaSeleccionada = categoria
+                        viewModel?.filterByCategory(categoria)
+                    }
                 )
             }
         }
@@ -111,8 +123,13 @@ fun ExploreScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("< 5 min", "< 10 min", "< 15 min").forEach { tiempo ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("< 5 min", "< 10 min", "< 15 min", "< 20 min").forEach { tiempo ->
                         TiempoChip(
                             texto = tiempo,
                             seleccionado = tiempoCaminando == tiempo,
@@ -160,7 +177,12 @@ fun ExploreScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     DietaChip(texto = "Vegetarian", marcado = vegetariano) {
                         vegetariano = !vegetariano
                     }
@@ -170,11 +192,6 @@ fun ExploreScreen(
                     DietaChip(texto = "Gluten-Free", marcado = sinGluten) {
                         sinGluten = !sinGluten
                     }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     DietaChip(texto = "Nut-Free", marcado = sinNueces) {
                         sinNueces = !sinNueces
                     }
@@ -190,7 +207,12 @@ fun ExploreScreen(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     listOf("Cash", "Card", "Nequi", "Daviplata").forEach { metodo ->
                         PagoChip(
                             texto = metodo,
@@ -234,7 +256,10 @@ fun ExploreScreen(
                 Spacer(modifier = Modifier.height(22.dp))
 
                 Button(
-                    onClick = onApplyFilters,
+                    onClick = {
+                        viewModel?.filterByCategory(categoriaSeleccionada)
+                        onApplyFilters()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -271,7 +296,9 @@ fun CategoriaChip(texto: String, seleccionado: Boolean, onClick: () -> Unit) {
         Text(
             text = texto,
             color = if (seleccionado) ShadowGrey else TextMuted,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            maxLines = 1,
+            softWrap = false
         )
     }
 }
@@ -293,7 +320,9 @@ fun TiempoChip(texto: String, seleccionado: Boolean, onClick: () -> Unit) {
         Text(
             text = texto,
             color = if (seleccionado) UniandesAmber else TextMuted,
-            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+            maxLines = 1,
+            softWrap = false
         )
     }
 }
@@ -325,7 +354,9 @@ fun DietaChip(texto: String, marcado: Boolean, onClick: () -> Unit) {
             Text(
                 text = texto,
                 color = if (marcado) CardSurfaceWhite else TextPrimary,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                softWrap = false
             )
         }
     }
@@ -348,7 +379,9 @@ fun PagoChip(texto: String, seleccionado: Boolean, onClick: () -> Unit) {
         Text(
             text = texto,
             color = if (seleccionado) UniandesAmber else TextPrimary,
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 1,
+            softWrap = false
         )
     }
 }

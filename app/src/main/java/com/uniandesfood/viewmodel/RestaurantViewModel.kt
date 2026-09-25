@@ -1,5 +1,8 @@
 package com.uniandesfood.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.uniandesfood.data.model.FilterCriteria
@@ -22,6 +25,9 @@ class RestaurantViewModel(
     private val _selectedRestaurant = MutableStateFlow<Restaurant?>(restaurantRepository.getAllRestaurants().firstOrNull())
     val selectedRestaurant: StateFlow<Restaurant?> = _selectedRestaurant.asStateFlow()
 
+    var currentBuilding by mutableStateOf("ML")
+        private set
+
     private var currentCriteria: FilterCriteria? = null
 
     init {
@@ -41,8 +47,17 @@ class RestaurantViewModel(
 
     fun filterRestaurants(criteria: FilterCriteria) {
         currentCriteria = criteria
-        _restaurants.value = restaurantRepository.filterRestaurants(criteria)
-        _selectedRestaurant.value = _restaurants.value.firstOrNull()
+        currentBuilding = criteria.selectedBuilding
+        val filtered = restaurantRepository.filterRestaurants(criteria)
+        _restaurants.value = filtered
+        _selectedRestaurant.value = filtered.firstOrNull()
+    }
+
+    fun filterByCategory(category: String) {
+        currentCriteria = null
+        val filtered = restaurantRepository.filterByCategory(category)
+        _restaurants.value = filtered
+        _selectedRestaurant.value = filtered.firstOrNull()
     }
 
     fun selectRestaurant(restaurantId: String) {
