@@ -1,6 +1,7 @@
 package com.uniandesfood
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,13 +14,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.uniandesfood.data.model.Restaurant
 import com.uniandesfood.ui.theme.*
 import com.uniandesfood.viewmodel.AuthViewModel
 import com.uniandesfood.viewmodel.FiltersViewModel
 import com.uniandesfood.viewmodel.RestaurantViewModel
+import com.uniandesfood.viewmodel.ReviewViewModel
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
 
@@ -75,6 +81,16 @@ fun MainAppContainer(
     onLogout: () -> Unit = {}
 ) {
     var currentScreen by remember { mutableIntStateOf(0) }
+    val reviewViewModel: ReviewViewModel = viewModel()
+    val context = LocalContext.current
+    var scannedRestaurant by remember { mutableStateOf<Restaurant?>(null) }
+
+    LaunchedEffect(scannedRestaurant) {
+        if (scannedRestaurant != null) {
+            delay(1000)
+            currentScreen = 4
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -189,8 +205,26 @@ fun MainAppContainer(
                         }
                     )
                     3 -> ScanQrScreen(
-                        onBack = { currentScreen = 1 }
+                        onBack = { currentScreen = 1 },
+                        isValidQr = { restaurantViewModel.findById(it) != null },
+                        onQrScanned = { value -> scannedRestaurant = restaurantViewModel.findById(value) }
                     )
+                    4 -> scannedRestaurant?.let { r ->
+                        ReviewScreen(
+                            restaurantName = r.name,
+                            onSubmit = { rating ->
+                                reviewViewModel.submitReview(r.id, rating)
+                                Toast.makeText(context, "Thanks for your review!", Toast.LENGTH_SHORT).show()
+                                scannedRestaurant = null
+                                currentScreen = 1
+                            },
+                            onCancel = {
+                                reviewViewModel.cancelReview(r.id)
+                                scannedRestaurant = null
+                                currentScreen = 1
+                            }
+                        )
+                    }
                 }
             }
         }
