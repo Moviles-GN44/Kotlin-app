@@ -1,5 +1,15 @@
 package com.uniandesfood
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview as CameraXPreview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -13,25 +23,67 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
 import com.uniandesfood.ui.theme.*
+import java.util.concurrent.Executors
 
 
 @Composable
 fun ScanQrScreen(
     onBack: () -> Unit = {},
-    visitaVerificada: Boolean = true
+    visitaVerificada: Boolean = false,
+    onQrScanned: (String) -> Unit = {}
 ) {
     val fondoCamara = Color(0xFF1A1A1A)
+    val context = LocalContext.current
+    val isInPreview = LocalInspectionMode.current
+
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                    PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var scannedValue by remember { mutableStateOf<String?>(null) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> hasCameraPermission = granted }
+
+    LaunchedEffect(Unit) {
+        if (!hasCameraPermission && !isInPreview) {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(fondoCamara)
     ) {
+
+        if (hasCameraPermission && !isInPreview && scannedValue == null) {
+            CameraQrPreview(
+                onQrDetected = { value ->
+                    if (scannedValue == null) {
+                        scannedValue = value
+                        onQrScanned(value)
+                    }
+                }
+            )
+        }
 
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -79,14 +131,36 @@ fun ScanQrScreen(
                     )
                 }
 
-                Text(
-                    text = "Point at the restaurant's QR code",
-                    color = CardSurfaceWhite,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 28.dp)
-                )
+                if (hasCameraPermission) {
+                    Text(
+                        text = "Point at the restaurant's QR code",
+                        color = CardSurfaceWhite,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 28.dp)
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Camera permission is required to scan QR codes",
+                            color = CardSurfaceWhite,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                            colors = ButtonDefaults.buttonColors(containerColor = UniandesAmber)
+                        ) {
+                            Text(text = "Grant permission", color = ShadowGrey)
+                        }
+                    }
+                }
             }
 
             Row(
@@ -110,7 +184,7 @@ fun ScanQrScreen(
                 }
             }
 
-            if (visitaVerificada) {
+            if (visitaVerificada || scannedValue != null) {
                 Surface(
                     color = StatusFastGreen,
                     shape = RoundedCornerShape(14.dp),
@@ -136,7 +210,7 @@ fun ScanQrScreen(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "At El Corral Uniandes, Opening review...",
+                                text = "QR detected: ${scannedValue ?: "El Corral Uniandes"}. Opening review...",
                                 color = CardSurfaceWhite,
                                 style = MaterialTheme.typography.bodySmall
                             )
@@ -146,6 +220,81 @@ fun ScanQrScreen(
             }
         }
     }
+}
+
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
+@Composable
+private fun CameraQrPreview(onQrDetected: (String) -> Unit) {
+    val context = LocalContext.current
+    val lifecycleOwner = context as LifecycleOwner
+    val currentOnQrDetected by rememberUpdatedState(onQrDetected)
+
+    val previewView = remember {
+        PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val analysisExecutor = Executors.newSingleThreadExecutor()
+        val scanner = BarcodeScanning.getClient(
+            BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                .build()
+        )
+        val analysis = ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+
+        analysis.setAnalyzer(analysisExecutor) { imageProxy ->
+            val mediaImage = imageProxy.image
+            if (mediaImage == null) {
+                imageProxy.close()
+            } else {
+                val image = InputImage.fromMediaImage(
+                    mediaImage,
+                    imageProxy.imageInfo.rotationDegrees
+                )
+                scanner.process(image)
+                    .addOnSuccessListener { barcodes ->
+                        barcodes.firstNotNullOfOrNull { it.rawValue?.takeIf { v -> v.isNotBlank() } }
+                            ?.let { currentOnQrDetected(it) }
+                    }
+                    .addOnCompleteListener { imageProxy.close() }
+            }
+        }
+
+        val providerFuture = ProcessCameraProvider.getInstance(context)
+        var cameraProvider: ProcessCameraProvider? = null
+        providerFuture.addListener({
+            try {
+                val provider = providerFuture.get()
+                cameraProvider = provider
+                val preview = CameraXPreview.Builder().build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
+                provider.unbindAll()
+                provider.bindToLifecycle(
+                    lifecycleOwner,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview,
+                    analysis
+                )
+            } catch (_: Exception) {
+                
+            }
+        }, ContextCompat.getMainExecutor(context))
+
+        onDispose {
+            cameraProvider?.unbindAll()
+            analysis.clearAnalyzer()
+            analysisExecutor.shutdown()
+            scanner.close()
+        }
+    }
+
+    AndroidView(
+        factory = { previewView },
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
 @Composable
