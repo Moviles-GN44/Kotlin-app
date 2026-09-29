@@ -41,6 +41,11 @@ class AnalyticsRepository(
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
+    // a) Session ID compartido durante la ejecución de la app
+    companion object {
+        val sessionId: String = UUID.randomUUID().toString()
+    }
+
     // Optional remote microservice endpoint URL configured by group
     private var remoteEndpointUrl: String? = null
 
@@ -51,7 +56,8 @@ class AnalyticsRepository(
     fun logEvent(name: String, params: Map<String, Any> = emptyMap()) {
         val event = AnalyticsEvent(
             eventName = name,
-            params = params
+            // b) Se inyecta session_id en el map de parámetros
+            params = params + ("session_id" to sessionId)
         )
         _events.value = _events.value + event
 
@@ -130,16 +136,20 @@ class AnalyticsRepository(
      * Karin's Type 2 BQ:
      * Tracks student engagement with photographic menus and dish inspection.
      */
-    fun logMenuInspection(restaurantId: String, dishCount: Int, checkedPhotos: Boolean) {
-        logEvent(
-            name = "karin_bq_menu_inspection",
-            params = mapOf(
-                "bq_author" to "Karin",
-                "restaurant_id" to restaurantId,
-                "dish_count" to dishCount,
-                "checked_photos" to checkedPhotos
-            )
+    fun logMenuInspection(
+        restaurantId: String,
+        dishCount: Int,
+        checkedPhotos: Boolean,
+        dishId: String? = null
+    ) {
+        val params = mutableMapOf<String, Any>(
+            "bq_author" to "Karin",
+            "restaurant_id" to restaurantId,
+            "dish_count" to dishCount,
+            "checked_photos" to checkedPhotos
         )
+        dishId?.let { params["dish_id"] = it }
+        logEvent(name = "karin_bq_menu_inspection", params = params)
     }
 
     /**
