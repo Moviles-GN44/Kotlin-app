@@ -44,6 +44,7 @@ import java.util.concurrent.Executors
 fun ScanQrScreen(
     onBack: () -> Unit = {},
     visitaVerificada: Boolean = false,
+    isValidQr: (String) -> Boolean = { true },
     onQrScanned: (String) -> Unit = {}
 ) {
     val fondoCamara = Color(0xFF1A1A1A)
@@ -57,6 +58,7 @@ fun ScanQrScreen(
         )
     }
     var scannedValue by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -74,12 +76,17 @@ fun ScanQrScreen(
             .background(fondoCamara)
     ) {
 
-        if (hasCameraPermission && !isInPreview && scannedValue == null) {
+        if (hasCameraPermission && !isInPreview) {
             CameraQrPreview(
                 onQrDetected = { value ->
                     if (scannedValue == null) {
-                        scannedValue = value
-                        onQrScanned(value)
+                        if (isValidQr(value)) {
+                            errorMessage = null
+                            scannedValue = value
+                            onQrScanned(value)
+                        } else {
+                            errorMessage = "QR not recognized. Scan a UniandesFood restaurant code."
+                        }
                     }
                 }
             )
@@ -133,7 +140,7 @@ fun ScanQrScreen(
 
                 if (hasCameraPermission) {
                     Text(
-                        text = "Point at the restaurant's QR code",
+                        text = errorMessage ?: "Point at the restaurant's QR code",
                         color = CardSurfaceWhite,
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier

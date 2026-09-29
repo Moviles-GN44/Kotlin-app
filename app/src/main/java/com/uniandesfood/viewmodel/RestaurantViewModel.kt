@@ -72,4 +72,7 @@ class RestaurantViewModel(
             )
         }
     }
+
+    fun findById(id: String): Restaurant? =
+        restaurantRepository.getAllRestaurants().find { it.id == id.trim() }
 }
