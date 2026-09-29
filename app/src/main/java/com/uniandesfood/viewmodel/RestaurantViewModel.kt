@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.uniandesfood.data.model.FilterCriteria
+import com.uniandesfood.data.model.MenuItem
 import com.uniandesfood.data.model.Restaurant
 import com.uniandesfood.data.repository.AnalyticsRepository
 import com.uniandesfood.data.repository.RestaurantRepository
@@ -63,6 +64,24 @@ class RestaurantViewModel(
     fun selectRestaurant(restaurantId: String) {
         val found = restaurantRepository.getRestaurantById(restaurantId)
         _selectedRestaurant.value = found
+        
+        found?.let {
+            analyticsRepository.logMenuInspection(
+                restaurantId = it.id,
+                dishCount = it.menu.size,
+                checkedPhotos = false
+            )
+        }
+    }
+
+    fun onDishPhotoOpened(dish: MenuItem) {
+        val restaurant = _selectedRestaurant.value ?: return
+        analyticsRepository.logMenuInspection(
+            restaurantId = restaurant.id,
+            dishCount = restaurant.menu.size,
+            checkedPhotos = true,
+            dishId = dish.id
+        )
     }
 
     fun findById(id: String): Restaurant? =
