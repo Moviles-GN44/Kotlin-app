@@ -38,7 +38,15 @@ fun RestaurantDetailScreen(
     val restaurantName = selectedRestaurant?.name ?: ""
     val waitTimeLabel = selectedRestaurant?.waitTimeLabel ?: "< 5 MIN WAIT"
     val waitTimeCategory = selectedRestaurant?.waitTimeCategory ?: WaitTimeCategory.FAST
-    val ratingText = "${selectedRestaurant?.rating ?: 4.7} (${selectedRestaurant?.reviewCount ?: 128} verified student reviews)"
+    val reviewCount = selectedRestaurant?.reviewCount ?: 0
+    val ratingValue = selectedRestaurant?.rating ?: 0.0
+
+    val ratingText = if (reviewCount == 0) {
+        "N/A ★ (No reviews yet)"
+    } else {
+        "$ratingValue ★ ($reviewCount verified student reviews)"
+    }
+
     val walkTimeText = "$walkMinutes min walk from $currentBuilding Building"
     val paymentsText = "Accepts: ${(selectedRestaurant?.paymentMethods ?: listOf("Nequi", "Daviplata", "Cards", "Cash")).joinToString(", ")}"
 
@@ -115,11 +123,6 @@ fun RestaurantDetailScreen(
                                 style = MaterialTheme.typography.titleMedium,
                                 color = ShadowGrey
                             )
-                            Text(
-                                text = "Tap to view menu",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextMuted
-                            )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         LazyRow(
@@ -129,6 +132,7 @@ fun RestaurantDetailScreen(
                             items(allMatchingRestaurants) { restaurant ->
                                 val isSelected = restaurant.id == selectedRestaurant?.id
                                 val walkMin = restaurant.walkDistancesFromBuilding[currentBuilding] ?: 2
+                                val cardRatingText = if (restaurant.reviewCount == 0) "N/A ★" else "${restaurant.rating} ★"
                                 Card(
                                     colors = CardDefaults.cardColors(
                                         containerColor = if (isSelected) UniandesAmber.copy(alpha = 0.15f) else CardSurfaceWhite
@@ -162,7 +166,7 @@ fun RestaurantDetailScreen(
                                                 modifier = Modifier.size(12.dp)
                                             )
                                             Text(
-                                                text = "${restaurant.rating}",
+                                                text = cardRatingText,
                                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                                 color = UniandesAmber
                                             )
@@ -279,7 +283,7 @@ fun RestaurantDetailScreen(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = "${selectedRestaurant?.rating ?: 4.8} ★ Verified Campus Spot",
+                                    text = ratingText,
                                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                                     color = UniandesAmber
                                 )
@@ -373,7 +377,7 @@ fun RestaurantDetailScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         if (dish.isVegan) {
-                                            Surface(
+                                             Surface(
                                                 color = MintEmerald.copy(alpha = 0.15f),
                                                 shape = RoundedCornerShape(4.dp)
                                             ) {

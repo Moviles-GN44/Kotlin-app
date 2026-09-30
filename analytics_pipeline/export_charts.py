@@ -125,7 +125,7 @@ def generate_qr_chart(events):
     for r in ratings:
         if r in rating_counts: rating_counts[r] += 1
 
-    bars = ax.bar([f"{k}★" for k in rating_counts.keys()], rating_counts.values(), color="#818CF8", edgecolor="#4F46E5", width=0.5)
+    bars = ax.bar([f"{k} Estrellas" for k in rating_counts.keys()], rating_counts.values(), color="#818CF8", edgecolor="#4F46E5", width=0.5)
     ax.set_title("Distribución de Calificaciones tras Escaneo QR", fontsize=11, fontweight="bold")
     ax.set_xlabel("Puntaje", fontsize=10)
     ax.set_ylabel("Reseñas Completadas", fontsize=10)

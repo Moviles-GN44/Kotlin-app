@@ -109,8 +109,7 @@ class AnalyticsRepository(
         maxWalkTimeMinutes: Float = 10f,
         budgetRange: String = "MEDIUM",
         isVegan: Boolean = false,
-        isGlutenFree: Boolean = false,
-        isLactoseFree: Boolean = false
+        isGlutenFree: Boolean = false
     ) {
         logEvent(
             name = "samuel_bq_filter_session",
@@ -122,8 +121,7 @@ class AnalyticsRepository(
                 "max_walk_time_min" to maxWalkTimeMinutes,
                 "budget_range" to budgetRange,
                 "is_vegan" to isVegan,
-                "is_gluten_free" to isGlutenFree,
-                "is_lactose_free" to isLactoseFree
+                "is_gluten_free" to isGlutenFree
             )
         )
     }

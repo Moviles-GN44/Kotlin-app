@@ -21,6 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.uniandesfood.data.model.BudgetRange
+import com.uniandesfood.data.model.FilterCriteria
 import com.uniandesfood.ui.theme.*
 import com.uniandesfood.viewmodel.RestaurantViewModel
 
@@ -30,18 +32,21 @@ fun ExploreScreen(
     viewModel: RestaurantViewModel? = null,
     onApplyFilters: () -> Unit = {}
 ) {
-
     var categoriaSeleccionada by remember { mutableStateOf("Executive Lunch") }
-    var tiempoCaminando by remember { mutableStateOf("< 5 min") }
+    var selectedBuilding by remember { mutableStateOf(viewModel?.currentBuilding ?: "ML") }
+    var buildingMenuExpanded by remember { mutableStateOf(false) }
+
+    var tiempoCaminando by remember { mutableStateOf("< 10 min") }
     var presupuesto by remember { mutableStateOf(5000f..25000f) }
 
-    var vegetariano by remember { mutableStateOf(true) }
-    var vegano by remember { mutableStateOf(true) }
+    var vegetariano by remember { mutableStateOf(false) }
+    var vegano by remember { mutableStateOf(false) }
     var sinGluten by remember { mutableStateOf(false) }
-    var sinNueces by remember { mutableStateOf(false) }
 
-    var metodoPago by remember { mutableStateOf("") }
+    var selectedPayments by remember { mutableStateOf(setOf("Nequi", "Cards", "Cash")) }
     var abiertoAhora by remember { mutableStateOf(true) }
+
+    val campusBuildings = listOf("ML", "RGD", "Franco", "SD", "C", "W")
 
     Column(
         modifier = Modifier
@@ -96,6 +101,7 @@ fun ExploreScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
+                // Interactive Building Selector
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -106,18 +112,41 @@ fun ExploreScreen(
                         style = MaterialTheme.typography.titleMedium,
                         color = ShadowGrey
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "From ML",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = UniandesAmber
-                        )
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = "Elegir edificio",
-                            tint = UniandesAmber,
-                            modifier = Modifier.size(18.dp)
-                        )
+                    Box {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { buildingMenuExpanded = true }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "From $selectedBuilding",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = UniandesAmber
+                            )
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Elegir edificio",
+                                tint = UniandesAmber,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = buildingMenuExpanded,
+                            onDismissRequest = { buildingMenuExpanded = false }
+                        ) {
+                            campusBuildings.forEach { building ->
+                                DropdownMenuItem(
+                                    text = { Text("Edificio $building", fontWeight = if (building == selectedBuilding) FontWeight.Bold else FontWeight.Normal) },
+                                    onClick = {
+                                        selectedBuilding = building
+                                        buildingMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -150,7 +179,7 @@ fun ExploreScreen(
                         color = ShadowGrey
                     )
                     Text(
-                        text = "$5.000 - $25.000 COP",
+                        text = "$${presupuesto.start.toInt().formatCop()} - $${presupuesto.endInclusive.toInt().formatCop()} COP",
                         style = MaterialTheme.typography.bodySmall,
                         color = UniandesAmber
                     )
@@ -192,15 +221,12 @@ fun ExploreScreen(
                     DietaChip(texto = "Gluten-Free", marcado = sinGluten) {
                         sinGluten = !sinGluten
                     }
-                    DietaChip(texto = "Nut-Free", marcado = sinNueces) {
-                        sinNueces = !sinNueces
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(22.dp))
 
                 Text(
-                    text = "Payment Method",
+                    text = "Payment Method (Multi-Select)",
                     style = MaterialTheme.typography.titleMedium,
                     color = ShadowGrey
                 )
@@ -213,11 +239,20 @@ fun ExploreScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("Cash", "Card", "Nequi", "Daviplata").forEach { metodo ->
+                    listOf("Cash", "Cards", "Nequi", "Daviplata").forEach { metodo ->
+                        val isSelected = selectedPayments.contains(metodo)
                         PagoChip(
                             texto = metodo,
-                            seleccionado = metodoPago == metodo,
-                            onClick = { metodoPago = metodo }
+                            seleccionado = isSelected,
+                            onClick = {
+                                val current = selectedPayments.toMutableSet()
+                                if (isSelected) {
+                                    if (current.size > 1) current.remove(metodo)
+                                } else {
+                                    current.add(metodo)
+                                }
+                                selectedPayments = current
+                            }
                         )
                     }
                 }
@@ -257,7 +292,29 @@ fun ExploreScreen(
 
                 Button(
                     onClick = {
-                        viewModel?.filterByCategory(categoriaSeleccionada)
+                        val maxWalk = when (tiempoCaminando) {
+                            "< 5 min" -> 5f
+                            "< 10 min" -> 10f
+                            "< 15 min" -> 15f
+                            else -> 20f
+                        }
+                        val budgetRange = if (presupuesto.endInclusive <= 15000f) {
+                            BudgetRange.CHEAP
+                        } else if (presupuesto.endInclusive <= 25000f) {
+                            BudgetRange.MEDIUM
+                        } else {
+                            BudgetRange.HIGH
+                        }
+
+                        val criteria = FilterCriteria(
+                            selectedBuilding = selectedBuilding,
+                            maxWalkTimeMinutes = maxWalk,
+                            selectedBudget = budgetRange,
+                            isVeganSelected = vegano || vegetariano,
+                            isGlutenFreeSelected = sinGluten,
+                            selectedPayments = selectedPayments
+                        )
+                        viewModel?.filterRestaurants(criteria)
                         onApplyFilters()
                     },
                     modifier = Modifier
@@ -277,6 +334,10 @@ fun ExploreScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
     }
+}
+
+private fun Int.formatCop(): String {
+    return String.format("%,d", this).replace(',', '.')
 }
 
 @Composable

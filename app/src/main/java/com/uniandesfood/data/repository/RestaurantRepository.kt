@@ -24,13 +24,12 @@ class RestaurantRepository(
             walkDistancesFromBuilding = mapOf("RGD" to 1, "ML" to 4, "Franco" to 6, "C" to 3, "W" to 7, "SD" to 5),
             waitTimeCategory = WaitTimeCategory.FAST,
             waitTimeLabel = "< 5 MIN WAIT",
-            rating = 4.8,
-            reviewCount = 184,
+            rating = 0.0,
+            reviewCount = 0,
             averagePriceCOP = 17500,
             paymentMethods = listOf("Nequi", "Cards", "Cash"),
             isVeganFriendly = true,
             isGlutenFreeFriendly = true,
-            isLactoseFreeFriendly = true,
             menu = listOf(
                 MenuItem(
                     id = "et1",
@@ -69,13 +68,12 @@ class RestaurantRepository(
             walkDistancesFromBuilding = mapOf("ML" to 1, "RGD" to 5, "Franco" to 7, "C" to 4, "W" to 8, "SD" to 8),
             waitTimeCategory = WaitTimeCategory.MODERATE,
             waitTimeLabel = "5-10 MIN WAIT",
-            rating = 4.7,
-            reviewCount = 210,
+            rating = 0.0,
+            reviewCount = 0,
             averagePriceCOP = 25000,
             paymentMethods = listOf("Nequi", "Cards", "Cash"),
             isVeganFriendly = true,
             isGlutenFreeFriendly = true,
-            isLactoseFreeFriendly = true,
             menu = listOf(
                 MenuItem(
                     id = "ob1",
@@ -114,13 +112,12 @@ class RestaurantRepository(
             walkDistancesFromBuilding = mapOf("RGD" to 1, "ML" to 4, "Franco" to 6, "C" to 3, "W" to 7, "SD" to 5),
             waitTimeCategory = WaitTimeCategory.MODERATE,
             waitTimeLabel = "5-10 MIN WAIT",
-            rating = 4.7,
-            reviewCount = 165,
+            rating = 0.0,
+            reviewCount = 0,
             averagePriceCOP = 25000,
             paymentMethods = listOf("Nequi", "Cards", "Cash"),
             isVeganFriendly = true,
             isGlutenFreeFriendly = true,
-            isLactoseFreeFriendly = true,
             menu = listOf(
                 MenuItem(
                     id = "obr1",
@@ -150,13 +147,12 @@ class RestaurantRepository(
             walkDistancesFromBuilding = mapOf("RGD" to 1, "ML" to 4, "Franco" to 6, "C" to 3, "W" to 7, "SD" to 5),
             waitTimeCategory = WaitTimeCategory.LONG,
             waitTimeLabel = "> 10 MIN WAIT",
-            rating = 4.6,
-            reviewCount = 142,
+            rating = 0.0,
+            reviewCount = 0,
             averagePriceCOP = 22000,
             paymentMethods = listOf("Nequi", "Cards", "Cash"),
             isVeganFriendly = false,
             isGlutenFreeFriendly = true,
-            isLactoseFreeFriendly = false,
             menu = listOf(
                 MenuItem(
                     id = "bp1",
@@ -195,13 +191,12 @@ class RestaurantRepository(
             walkDistancesFromBuilding = mapOf("SD" to 1, "W" to 3, "Franco" to 4, "C" to 5, "RGD" to 6, "ML" to 7),
             waitTimeCategory = WaitTimeCategory.LONG,
             waitTimeLabel = "> 10 MIN WAIT",
-            rating = 4.5,
-            reviewCount = 98,
+            rating = 0.0,
+            reviewCount = 0,
             averagePriceCOP = 22000,
             paymentMethods = listOf("Nequi", "Cards", "Cash"),
             isVeganFriendly = false,
             isGlutenFreeFriendly = true,
-            isLactoseFreeFriendly = false,
             menu = listOf(
                 MenuItem(
                     id = "bps1",
@@ -231,13 +226,12 @@ class RestaurantRepository(
             walkDistancesFromBuilding = mapOf("RGD" to 1, "ML" to 4, "Franco" to 6, "C" to 3, "W" to 7, "SD" to 5),
             waitTimeCategory = WaitTimeCategory.FAST,
             waitTimeLabel = "< 5 MIN WAIT",
-            rating = 4.8,
-            reviewCount = 175,
+            rating = 0.0,
+            reviewCount = 0,
             averagePriceCOP = 25000,
             paymentMethods = listOf("Nequi", "Cards", "Cash"),
             isVeganFriendly = true,
             isGlutenFreeFriendly = false,
-            isLactoseFreeFriendly = true,
             menu = listOf(
                 MenuItem(
                     id = "cs1",
@@ -285,13 +279,12 @@ class RestaurantRepository(
             walkDistancesFromBuilding = mapOf("Franco" to 1, "ML" to 6, "RGD" to 7, "C" to 5, "W" to 9, "SD" to 4),
             waitTimeCategory = WaitTimeCategory.LONG,
             waitTimeLabel = "> 10 MIN WAIT",
-            rating = 4.9,
-            reviewCount = 230,
+            rating = 0.0,
+            reviewCount = 0,
             averagePriceCOP = 30000,
             paymentMethods = listOf("Nequi", "Cards", "Cash"),
             isVeganFriendly = false,
             isGlutenFreeFriendly = false,
-            isLactoseFreeFriendly = false,
             menu = listOf(
                 MenuItem(
                     id = "ll1",
@@ -321,9 +314,6 @@ class RestaurantRepository(
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     init {
-        coroutineScope.launch {
-            seedInitialData()
-        }
         listenToFirestoreRestaurants()
     }
 
@@ -342,7 +332,6 @@ class RestaurantRepository(
                             _restaurantsFlow.value = list
                         }
                     } else if (snapshot != null && snapshot.isEmpty) {
-                        // Automatically seed initial data to Firestore if empty
                         coroutineScope.launch {
                             seedInitialData()
                         }
@@ -363,6 +352,37 @@ class RestaurantRepository(
             batch.commit().await()
         } catch (_: Exception) {
             // Non-fatal if offline
+        }
+    }
+
+    suspend fun submitReview(restaurantId: String, rating: Float) {
+        val currentList = _restaurantsFlow.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == restaurantId }
+        if (index != -1) {
+            val restaurant = currentList[index]
+            val currentCount = restaurant.reviewCount
+            val currentRating = restaurant.rating
+            val newCount = currentCount + 1
+            val newRating = if (currentCount == 0) {
+                rating.toDouble()
+            } else {
+                ((currentRating * currentCount) + rating) / newCount
+            }
+            val roundedRating = Math.round(newRating * 10.0) / 10.0
+            val updated = restaurant.copy(rating = roundedRating, reviewCount = newCount)
+            currentList[index] = updated
+            _restaurantsFlow.value = currentList
+
+            try {
+                firestore.collection("restaurants").document(restaurantId).update(
+                    mapOf(
+                        "rating" to roundedRating,
+                        "reviewCount" to newCount
+                    )
+                ).await()
+            } catch (_: Exception) {
+                // Ignore if offline
+            }
         }
     }
 
@@ -399,10 +419,9 @@ class RestaurantRepository(
 
             val matchesVegan = !criteria.isVeganSelected || restaurant.isVeganFriendly
             val matchesGlutenFree = !criteria.isGlutenFreeSelected || restaurant.isGlutenFreeFriendly
-            val matchesLactoseFree = !criteria.isLactoseFreeSelected || restaurant.isLactoseFreeFriendly
             val matchesPayment = criteria.selectedPayments.isEmpty() || restaurant.paymentMethods.any { it in criteria.selectedPayments }
 
-            matchesWalkTime && matchesBudget && matchesVegan && matchesGlutenFree && matchesLactoseFree && matchesPayment
+            matchesWalkTime && matchesBudget && matchesVegan && matchesGlutenFree && matchesPayment
         }.sortedBy { it.walkDistancesFromBuilding[criteria.selectedBuilding] ?: 99 }
     }
 }

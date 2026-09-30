@@ -41,10 +41,6 @@ class FiltersViewModel(
         _criteria.value = _criteria.value.copy(isGlutenFreeSelected = enabled)
     }
 
-    fun onLactoseFreeToggled(enabled: Boolean) {
-        _criteria.value = _criteria.value.copy(isLactoseFreeSelected = enabled)
-    }
-
     fun onPaymentToggled(payment: String) {
         val current = _criteria.value.selectedPayments.toMutableSet()
         if (current.contains(payment)) {
@@ -61,8 +57,7 @@ class FiltersViewModel(
         val durationSec = ((System.currentTimeMillis() - filterSessionStartTime) / 1000).coerceAtLeast(1)
         val activeFiltersCount = listOf(
             _criteria.value.isVeganSelected,
-            _criteria.value.isGlutenFreeSelected,
-            _criteria.value.isLactoseFreeSelected
+            _criteria.value.isGlutenFreeSelected
         ).count { it } + 2
 
         // Record Samuel's Type 2 BQ with complete analytical parameters
@@ -73,8 +68,7 @@ class FiltersViewModel(
             maxWalkTimeMinutes = _criteria.value.maxWalkTimeMinutes,
             budgetRange = _criteria.value.selectedBudget.name,
             isVegan = _criteria.value.isVeganSelected,
-            isGlutenFree = _criteria.value.isGlutenFreeSelected,
-            isLactoseFree = _criteria.value.isLactoseFreeSelected
+            isGlutenFree = _criteria.value.isGlutenFreeSelected
         )
         return _criteria.value
     }

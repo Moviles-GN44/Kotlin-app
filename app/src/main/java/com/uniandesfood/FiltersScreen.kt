@@ -32,7 +32,6 @@ fun FiltersScreen(
     val selectedBudget = criteria?.selectedBudget ?: BudgetRange.MEDIUM
     val isVeganSelected = criteria?.isVeganSelected ?: false
     val isGlutenFreeSelected = criteria?.isGlutenFreeSelected ?: false
-    val isLactoseFreeSelected = criteria?.isLactoseFreeSelected ?: false
     val selectedPayments = criteria?.selectedPayments ?: setOf("Nequi", "Cards", "Cash")
 
     LaunchedEffect(Unit) {
@@ -304,39 +303,6 @@ fun FiltersScreen(
                             checked = isGlutenFreeSelected,
                             onCheckedChange = {
                                 viewModel?.onGlutenFreeToggled(it)
-                            },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MintEmerald,
-                                checkedTrackColor = MintEmerald.copy(alpha = 0.5f)
-                            )
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_allergen),
-                                contentDescription = "Lactose Free",
-                                tint = TagAllergenPurple,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "Lactose-Free",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextPrimary
-                            )
-                        }
-                        Switch(
-                            checked = isLactoseFreeSelected,
-                            onCheckedChange = {
-                                viewModel?.onLactoseFreeToggled(it)
                             },
                             colors = SwitchDefaults.colors(
                                 checkedThumbColor = MintEmerald,

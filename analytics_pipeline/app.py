@@ -64,7 +64,7 @@ def calculate_metrics(events):
     avg_duration = round(sum(durations) / len(durations), 1) if durations else "N/A"
 
     buildings = {"ML": 0, "RGD": 0, "Franco": 0, "SD": 0, "C": 0, "W": 0}
-    dietary_counts = {"Vegan": 0, "Gluten-Free": 0, "Lactose-Free": 0}
+    dietary_counts = {"Vegan": 0, "Gluten-Free": 0}
     budget_counts = {"CHEAP": 0, "MEDIUM": 0, "HIGH": 0}
     duration_buckets = {"< 5s": 0, "5-10s": 0, "10-20s": 0, "> 20s": 0}
 
@@ -75,7 +75,6 @@ def calculate_metrics(events):
 
         if params.get("is_vegan") is True: dietary_counts["Vegan"] += 1
         if params.get("is_gluten_free") is True: dietary_counts["Gluten-Free"] += 1
-        if params.get("is_lactose_free") is True: dietary_counts["Lactose-Free"] += 1
 
         bg = params.get("budget_range", "MEDIUM")
         budget_counts[bg] = budget_counts.get(bg, 0) + 1
@@ -379,12 +378,12 @@ def dashboard():
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#334155' } }, x: { grid: { color: '#1e293b' } } } }
                 });
 
-                // Dietary Chart
+                // Dietary Chart (Vegan & Gluten-Free only)
                 const ctxDietary = document.getElementById('chart-dietary').getContext('2d');
                 charts.dietary = new Chart(ctxDietary, {
                     type: 'doughnut',
-                    data: { labels: ['Vegano', 'Sin Gluten', 'Sin Lactosa'], datasets: [{ data: [0,0,0], backgroundColor: ['#10b981', '#f59e0b', '#6366f1'] }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } } } }
+                    data: { labels: ['Vegano', 'Sin Gluten'], datasets: [{ data: [0,0], backgroundColor: ['#10b981', '#f59e0b'] }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 11 } } } } }
                 });
 
                 // Photos Chart
@@ -463,12 +462,11 @@ def dashboard():
                     charts.buildings.data.datasets[0].data = Object.values(data.bq6_samuel.buildings);
                     charts.buildings.update();
 
-                    // Update Dietary (Explicit mapping: Vegan, Gluten-Free, Lactose-Free)
+                    // Update Dietary (Vegan & Gluten-Free only)
                     const dietary = data.bq6_samuel.dietary;
                     charts.dietary.data.datasets[0].data = [
                         dietary["Vegan"] || 0,
-                        dietary["Gluten-Free"] || 0,
-                        dietary["Lactose-Free"] || 0
+                        dietary["Gluten-Free"] || 0
                     ];
                     charts.dietary.update();
 

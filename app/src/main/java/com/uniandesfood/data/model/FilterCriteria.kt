@@ -12,6 +12,5 @@ data class FilterCriteria(
     val selectedBudget: BudgetRange = BudgetRange.MEDIUM,
     val isVeganSelected: Boolean = false,
     val isGlutenFreeSelected: Boolean = false,
-    val isLactoseFreeSelected: Boolean = false,
     val selectedPayments: Set<String> = setOf("Nequi", "Cards", "Cash")
 )
