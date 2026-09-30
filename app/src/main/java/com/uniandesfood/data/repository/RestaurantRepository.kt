@@ -17,218 +17,299 @@ class RestaurantRepository(
 
     private val sampleRestaurants = listOf(
         Restaurant(
-            id = "one_burrito_ml",
-            name = "One Burrito - ML",
-            category = "Fast Food",
-            buildingTag = "ML",
-            walkDistancesFromBuilding = mapOf("ML" to 2, "RGD" to 5, "Franco" to 7, "C" to 4, "W" to 8),
+            id = "el_toro_rgd",
+            name = "El Toro - RGD",
+            category = "Executive Lunch",
+            buildingTag = "RGD",
+            walkDistancesFromBuilding = mapOf("RGD" to 1, "ML" to 4, "Franco" to 6, "C" to 3, "W" to 7, "SD" to 5),
             waitTimeCategory = WaitTimeCategory.FAST,
             waitTimeLabel = "< 5 MIN WAIT",
-            rating = 4.7,
-            reviewCount = 128,
-            averagePriceCOP = 16000,
-            paymentMethods = listOf("Nequi", "Daviplata", "Cards", "Cash"),
+            rating = 4.8,
+            reviewCount = 184,
+            averagePriceCOP = 17500,
+            paymentMethods = listOf("Nequi", "Cards", "Cash"),
             isVeganFriendly = true,
             isGlutenFreeFriendly = true,
             isLactoseFreeFriendly = true,
             menu = listOf(
                 MenuItem(
-                    id = "d1",
-                    name = "Criollo Student Bowl",
-                    description = "Rice, red beans, sweet plantains, grilled chicken & fresh garden salad.",
+                    id = "et1",
+                    name = "De la Casa (Carne Sudada)",
+                    description = "Bowl de carne sudada casera, arroz con pasta, plátano dulce, papa criolla y limonada natural.",
+                    priceCOP = 17500,
+                    formattedPrice = "$17,500 COP",
+                    isVegan = false,
+                    isGlutenFree = false
+                ),
+                MenuItem(
+                    id = "et2",
+                    name = "Bowl Vegetariano Fresco",
+                    description = "Bowl con selección de verduras totalmente frescas, aderezo especial de la casa y limonada natural.",
                     priceCOP = 15500,
                     formattedPrice = "$15,500 COP",
-                    isVegan = false,
-                    isGlutenFree = false
-                ),
-                MenuItem(
-                    id = "d2",
-                    name = "Express Mixed Burrito",
-                    description = "Artisanal flour tortilla with seasoned shredded beef, guacamole & pico de gallo.",
-                    priceCOP = 17000,
-                    formattedPrice = "$17,000 COP",
-                    isVegan = false,
-                    isGlutenFree = false
-                ),
-                MenuItem(
-                    id = "d3",
-                    name = "Quinoa & Avocado Bowl",
-                    description = "Fresh mixed greens, crispy quinoa, cherry tomatoes & tahini-lime dressing.",
-                    priceCOP = 16000,
-                    formattedPrice = "$16,000 COP",
                     isVegan = true,
                     isGlutenFree = true
                 ),
                 MenuItem(
-                    id = "d4",
-                    name = "Coffee & Baked Empanada Combo",
-                    description = "8oz hot Americano coffee with baked spinach & ricotta empanada.",
-                    priceCOP = 7500,
-                    formattedPrice = "$7,500 COP",
+                    id = "et3",
+                    name = "Bandeja Paisa Criolla",
+                    description = "Arroz blanco, frijoles caseros, chicharrón crocante, plátano maduro y limonada natural.",
+                    priceCOP = 17500,
+                    formattedPrice = "$17,500 COP",
                     isVegan = false,
+                    isGlutenFree = true
+                )
+            )
+        ),
+        Restaurant(
+            id = "one_burrito_ml",
+            name = "One Burrito - ML",
+            category = "Fast Food",
+            buildingTag = "ML",
+            walkDistancesFromBuilding = mapOf("ML" to 1, "RGD" to 5, "Franco" to 7, "C" to 4, "W" to 8, "SD" to 8),
+            waitTimeCategory = WaitTimeCategory.MODERATE,
+            waitTimeLabel = "5-10 MIN WAIT",
+            rating = 4.7,
+            reviewCount = 210,
+            averagePriceCOP = 25000,
+            paymentMethods = listOf("Nequi", "Cards", "Cash"),
+            isVeganFriendly = true,
+            isGlutenFreeFriendly = true,
+            isLactoseFreeFriendly = true,
+            menu = listOf(
+                MenuItem(
+                    id = "ob1",
+                    name = "Burrito Personalizado",
+                    description = "Tortilla de harina con arroz, frijol, proteína al gusto o verduras salteadas, pico de gallo, queso, guacamole y salsas.",
+                    priceCOP = 25000,
+                    formattedPrice = "$25,000 COP",
+                    isVegan = true,
+                    isGlutenFree = false
+                ),
+                MenuItem(
+                    id = "ob2",
+                    name = "Quesadilla Queso & Proteína",
+                    description = "Quesadilla dorada con queso fundido, proteína o vegetales, 3 toppings a elección y salsas mexicanas.",
+                    priceCOP = 24000,
+                    formattedPrice = "$24,000 COP",
+                    isVegan = true,
+                    isGlutenFree = false
+                ),
+                MenuItem(
+                    id = "ob3",
+                    name = "Sopa de Tortilla / Birria",
+                    description = "Sopa tradicional mexicana de tortilla o birria con proteína, aguacate, queso y toppings a elección.",
+                    priceCOP = 22000,
+                    formattedPrice = "$22,000 COP",
+                    isVegan = true,
+                    isGlutenFree = true
+                )
+            )
+        ),
+        Restaurant(
+            id = "one_burrito_rgd",
+            name = "One Burrito - RGD",
+            category = "Fast Food",
+            buildingTag = "RGD",
+            walkDistancesFromBuilding = mapOf("RGD" to 1, "ML" to 4, "Franco" to 6, "C" to 3, "W" to 7, "SD" to 5),
+            waitTimeCategory = WaitTimeCategory.MODERATE,
+            waitTimeLabel = "5-10 MIN WAIT",
+            rating = 4.7,
+            reviewCount = 165,
+            averagePriceCOP = 25000,
+            paymentMethods = listOf("Nequi", "Cards", "Cash"),
+            isVeganFriendly = true,
+            isGlutenFreeFriendly = true,
+            isLactoseFreeFriendly = true,
+            menu = listOf(
+                MenuItem(
+                    id = "obr1",
+                    name = "Burrito Personalizado",
+                    description = "Tortilla artesanal con arroz, frijol, proteínas seleccionadas o verduras, pico de gallo, guacamole y sour cream.",
+                    priceCOP = 25000,
+                    formattedPrice = "$25,000 COP",
+                    isVegan = true,
+                    isGlutenFree = false
+                ),
+                MenuItem(
+                    id = "obr2",
+                    name = "Quesadilla Especial",
+                    description = "Quesadilla con queso derretido, proteína o vegetales, maíz, pico de gallo y salsas de la casa.",
+                    priceCOP = 24000,
+                    formattedPrice = "$24,000 COP",
+                    isVegan = true,
                     isGlutenFree = false
                 )
             )
         ),
         Restaurant(
-            id = "wok_express_franco",
-            name = "Wok Express - Franco",
-            category = "Executive Lunch",
-            buildingTag = "Franco",
-            walkDistancesFromBuilding = mapOf("ML" to 6, "RGD" to 8, "Franco" to 1, "C" to 6, "W" to 10),
-            waitTimeCategory = WaitTimeCategory.MODERATE,
-            waitTimeLabel = "5-10 MIN WAIT",
+            id = "burger_play_rgd",
+            name = "Burger Play - RGD",
+            category = "Fast Food",
+            buildingTag = "RGD",
+            walkDistancesFromBuilding = mapOf("RGD" to 1, "ML" to 4, "Franco" to 6, "C" to 3, "W" to 7, "SD" to 5),
+            waitTimeCategory = WaitTimeCategory.LONG,
+            waitTimeLabel = "> 10 MIN WAIT",
+            rating = 4.6,
+            reviewCount = 142,
+            averagePriceCOP = 22000,
+            paymentMethods = listOf("Nequi", "Cards", "Cash"),
+            isVeganFriendly = false,
+            isGlutenFreeFriendly = true,
+            isLactoseFreeFriendly = false,
+            menu = listOf(
+                MenuItem(
+                    id = "bp1",
+                    name = "Hamburguesa Súper Play",
+                    description = "Carne artesanal, pollo desmechado, tocineta crocante, tomate, lechuga, cebolla y bebida (limonada o té).",
+                    priceCOP = 22000,
+                    formattedPrice = "$22,000 COP",
+                    isVegan = false,
+                    isGlutenFree = false
+                ),
+                MenuItem(
+                    id = "bp2",
+                    name = "Bacon Burger Clásica",
+                    description = "Hamburguesa con carne a la parrilla, tocineta crocante, queso, vegetales frescos y bebida.",
+                    priceCOP = 18000,
+                    formattedPrice = "$18,000 COP",
+                    isVegan = false,
+                    isGlutenFree = false
+                ),
+                MenuItem(
+                    id = "bp3",
+                    name = "Mazorcada Mixta Especial",
+                    description = "Base de maíz tierno con carne de res, pollo, tocineta, papa ripio, queso fundido y bebida.",
+                    priceCOP = 20000,
+                    formattedPrice = "$20,000 COP",
+                    isVegan = false,
+                    isGlutenFree = true
+                )
+            )
+        ),
+        Restaurant(
+            id = "burger_play_sd",
+            name = "Burger Play - SD",
+            category = "Fast Food",
+            buildingTag = "SD",
+            walkDistancesFromBuilding = mapOf("SD" to 1, "W" to 3, "Franco" to 4, "C" to 5, "RGD" to 6, "ML" to 7),
+            waitTimeCategory = WaitTimeCategory.LONG,
+            waitTimeLabel = "> 10 MIN WAIT",
             rating = 4.5,
-            reviewCount = 94,
-            averagePriceCOP = 21000,
+            reviewCount = 98,
+            averagePriceCOP = 22000,
+            paymentMethods = listOf("Nequi", "Cards", "Cash"),
+            isVeganFriendly = false,
+            isGlutenFreeFriendly = true,
+            isLactoseFreeFriendly = false,
+            menu = listOf(
+                MenuItem(
+                    id = "bps1",
+                    name = "Hamburguesa Súper Play",
+                    description = "Carne artesanal, pollo, tocineta, tomate, lechuga, cebolla y bebida incluida.",
+                    priceCOP = 22000,
+                    formattedPrice = "$22,000 COP",
+                    isVegan = false,
+                    isGlutenFree = false
+                ),
+                MenuItem(
+                    id = "bps2",
+                    name = "Mazorcada Mixta Especial",
+                    description = "Maíz tierno desgranado con carnes mixtas, papa ripio y queso fundido.",
+                    priceCOP = 20000,
+                    formattedPrice = "$20,000 COP",
+                    isVegan = false,
+                    isGlutenFree = true
+                )
+            )
+        ),
+        Restaurant(
+            id = "la_cabra_sanduchera_rgd",
+            name = "La Cabra Sanduchera - RGD",
+            category = "Fast Food",
+            buildingTag = "RGD",
+            walkDistancesFromBuilding = mapOf("RGD" to 1, "ML" to 4, "Franco" to 6, "C" to 3, "W" to 7, "SD" to 5),
+            waitTimeCategory = WaitTimeCategory.FAST,
+            waitTimeLabel = "< 5 MIN WAIT",
+            rating = 4.8,
+            reviewCount = 175,
+            averagePriceCOP = 25000,
             paymentMethods = listOf("Nequi", "Cards", "Cash"),
             isVeganFriendly = true,
             isGlutenFreeFriendly = false,
             isLactoseFreeFriendly = true,
             menu = listOf(
                 MenuItem(
-                    id = "w1",
-                    name = "Teriyaki Tofu Stir-Fry",
-                    description = "Jasmine rice, stir-fried vegetables, crispy tofu & teriyaki glaze.",
-                    priceCOP = 19500,
-                    formattedPrice = "$19,500 COP",
-                    isVegan = true,
-                    isGlutenFree = false
-                ),
-                MenuItem(
-                    id = "w2",
-                    name = "Crispy Orange Chicken",
-                    description = "Tender chicken bites tossed in zesty sweet-and-sour orange sauce.",
-                    priceCOP = 22000,
-                    formattedPrice = "$22,000 COP",
+                    id = "cs1",
+                    name = "Sándwich de Pollo Especial",
+                    description = "Pechuga de pollo a la plancha, lechuga fresca y salsa de la casa en pan artesanal.",
+                    priceCOP = 23000,
+                    formattedPrice = "$23,000 COP",
                     isVegan = false,
                     isGlutenFree = false
-                )
-            )
-        ),
-        Restaurant(
-            id = "verde_saludable_rgd",
-            name = "Verde & Natural - RGD",
-            category = "Healthy",
-            buildingTag = "RGD",
-            walkDistancesFromBuilding = mapOf("ML" to 4, "RGD" to 1, "Franco" to 6, "C" to 3, "W" to 7),
-            waitTimeCategory = WaitTimeCategory.FAST,
-            waitTimeLabel = "< 5 MIN WAIT",
-            rating = 4.8,
-            reviewCount = 156,
-            averagePriceCOP = 14500,
-            paymentMethods = listOf("Nequi", "Daviplata", "Cards"),
-            isVeganFriendly = true,
-            isGlutenFreeFriendly = true,
-            isLactoseFreeFriendly = true,
-            menu = listOf(
-                MenuItem(
-                    id = "v1",
-                    name = "Mediterranean Chickpea Salad",
-                    description = "Kalamata olives, cucumbers, cherry tomatoes, hummus & organic greens.",
-                    priceCOP = 14500,
-                    formattedPrice = "$14,500 COP",
-                    isVegan = true,
-                    isGlutenFree = true
                 ),
                 MenuItem(
-                    id = "v2",
-                    name = "Green Detox Smoothie Bowl",
-                    description = "Spinach, banana, spirulina, almond butter, chia seeds and fresh berries.",
-                    priceCOP = 13000,
-                    formattedPrice = "$13,000 COP",
+                    id = "cs2",
+                    name = "Sándwich Jamón Serrano & Rúgula",
+                    description = "Láminas de jamón serrano, salsa pomodoro, queso y rúgula fresca.",
+                    priceCOP = 21000,
+                    formattedPrice = "$21,000 COP",
+                    isVegan = false,
+                    isGlutenFree = false
+                ),
+                MenuItem(
+                    id = "cs3",
+                    name = "Choripán Artesanal",
+                    description = "Chorizo artesanal a la parrilla con chimichurri y salsas en pan baguette.",
+                    priceCOP = 15000,
+                    formattedPrice = "$15,000 COP",
+                    isVegan = false,
+                    isGlutenFree = false
+                ),
+                MenuItem(
+                    id = "cs4",
+                    name = "Sándwich Vegano Champiñones & Hummus",
+                    description = "Champiñones salteados, rúgula, tomate fresco, cebolla, aguacate y hummus artesanal.",
+                    priceCOP = 20000,
+                    formattedPrice = "$20,000 COP",
                     isVegan = true,
-                    isGlutenFree = true
+                    isGlutenFree = false
                 )
             )
         ),
         Restaurant(
-            id = "crepes_waffles_c",
-            name = "Crepes & Waffles - C",
-            category = "Desserts",
-            buildingTag = "C",
-            walkDistancesFromBuilding = mapOf("ML" to 3, "RGD" to 4, "Franco" to 5, "C" to 1, "W" to 6),
-            waitTimeCategory = WaitTimeCategory.MODERATE,
-            waitTimeLabel = "5-10 MIN WAIT",
+            id = "la_liebre_franco",
+            name = "La Liebre - Franco",
+            category = "Fast Food",
+            buildingTag = "Franco",
+            walkDistancesFromBuilding = mapOf("Franco" to 1, "ML" to 6, "RGD" to 7, "C" to 5, "W" to 9, "SD" to 4),
+            waitTimeCategory = WaitTimeCategory.LONG,
+            waitTimeLabel = "> 10 MIN WAIT",
             rating = 4.9,
-            reviewCount = 310,
-            averagePriceCOP = 18000,
-            paymentMethods = listOf("Nequi", "Daviplata", "Cards", "Cash"),
-            isVeganFriendly = true,
+            reviewCount = 230,
+            averagePriceCOP = 30000,
+            paymentMethods = listOf("Nequi", "Cards", "Cash"),
+            isVeganFriendly = false,
             isGlutenFreeFriendly = false,
-            isLactoseFreeFriendly = true,
+            isLactoseFreeFriendly = false,
             menu = listOf(
                 MenuItem(
-                    id = "c1",
-                    name = "Artisanal Belgian Waffle Nutella",
-                    description = "Crispy golden waffle loaded with warm Nutella, fresh strawberries and whipped cream.",
-                    priceCOP = 16500,
-                    formattedPrice = "$16,500 COP",
+                    id = "ll1",
+                    name = "Classic Cheeseburger",
+                    description = "Carne madurada a la parrilla, queso cheddar americano fundido y cebolla caramelizada.",
+                    priceCOP = 30000,
+                    formattedPrice = "$30,000 COP",
                     isVegan = false,
                     isGlutenFree = false
                 ),
                 MenuItem(
-                    id = "c2",
-                    name = "Arequipe & Banana Crepe",
-                    description = "Delicate warm crepe folded with traditional Colombian arequipe and sliced sweet bananas.",
-                    priceCOP = 14000,
-                    formattedPrice = "$14,000 COP",
+                    id = "ll2",
+                    name = "Double Smash Burger & Blue Cheese",
+                    description = "Doble carne smash crocante, salsa artesanal de queso azul y cebolla caramelizada.",
+                    priceCOP = 35000,
+                    formattedPrice = "$35,000 COP",
                     isVegan = false,
                     isGlutenFree = false
-                ),
-                MenuItem(
-                    id = "c3",
-                    name = "Gelato Passionfruit Coupe",
-                    description = "Double scoop of artisanal passionfruit and dark chocolate gelato.",
-                    priceCOP = 11500,
-                    formattedPrice = "$11,500 COP",
-                    isVegan = true,
-                    isGlutenFree = true
-                )
-            )
-        ),
-        Restaurant(
-            id = "juan_valdez_w",
-            name = "Café Juan Valdez - W",
-            category = "Café",
-            buildingTag = "W",
-            walkDistancesFromBuilding = mapOf("ML" to 5, "RGD" to 6, "Franco" to 8, "C" to 4, "W" to 1),
-            waitTimeCategory = WaitTimeCategory.FAST,
-            waitTimeLabel = "< 5 MIN WAIT",
-            rating = 4.6,
-            reviewCount = 215,
-            averagePriceCOP = 9500,
-            paymentMethods = listOf("Nequi", "Daviplata", "Cards", "Cash"),
-            isVeganFriendly = true,
-            isGlutenFreeFriendly = true,
-            isLactoseFreeFriendly = true,
-            menu = listOf(
-                MenuItem(
-                    id = "j1",
-                    name = "Nevado de Arequipe 16oz",
-                    description = "Blended cold specialty coffee with Colombian arequipe, milk and chantilly cream.",
-                    priceCOP = 13500,
-                    formattedPrice = "$13,500 COP",
-                    isVegan = false,
-                    isGlutenFree = true
-                ),
-                MenuItem(
-                    id = "j2",
-                    name = "Tinto Campesino & Pandebono",
-                    description = "100% premium Colombian drip coffee infused with panela and cinnamon + warm pandebono.",
-                    priceCOP = 7500,
-                    formattedPrice = "$7,500 COP",
-                    isVegan = false,
-                    isGlutenFree = true
-                ),
-                MenuItem(
-                    id = "j3",
-                    name = "Almond Milk Flat White",
-                    description = "Double shot of premium espresso with steamed organic almond milk.",
-                    priceCOP = 8900,
-                    formattedPrice = "$8,900 COP",
-                    isVegan = true,
-                    isGlutenFree = true
                 )
             )
         )
