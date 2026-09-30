@@ -4,28 +4,30 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview as CameraXPreview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,7 +40,6 @@ import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import com.uniandesfood.ui.theme.*
 import java.util.concurrent.Executors
-
 
 @Composable
 fun ScanQrScreen(
@@ -59,6 +60,7 @@ fun ScanQrScreen(
     }
     var scannedValue by remember { mutableStateOf<String?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isTorchOn by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -75,9 +77,9 @@ fun ScanQrScreen(
             .fillMaxSize()
             .background(fondoCamara)
     ) {
-
         if (hasCameraPermission && !isInPreview) {
             CameraQrPreview(
+                isTorchOn = isTorchOn,
                 onQrDetected = { value ->
                     if (scannedValue == null) {
                         if (isValidQr(value)) {
@@ -85,7 +87,7 @@ fun ScanQrScreen(
                             scannedValue = value
                             onQrScanned(value)
                         } else {
-                            errorMessage = "QR not recognized. Scan a UniandesFood restaurant code."
+                            errorMessage = "QR no reconocido. Escanea un código de Uniandes Food."
                         }
                     }
                 }
@@ -93,7 +95,6 @@ fun ScanQrScreen(
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -102,13 +103,13 @@ fun ScanQrScreen(
             ) {
                 IconButton(onClick = onBack) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Volver",
                         tint = CardSurfaceWhite
                     )
                 }
                 Text(
-                    text = "Scan QR Code",
+                    text = "Scan Restaurant QR",
                     style = MaterialTheme.typography.headlineMedium,
                     color = CardSurfaceWhite
                 )
@@ -122,7 +123,7 @@ fun ScanQrScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(220.dp)
+                        .size(240.dp)
                         .border(
                             width = 3.dp,
                             color = UniandesAmber,
@@ -140,9 +141,10 @@ fun ScanQrScreen(
 
                 if (hasCameraPermission) {
                     Text(
-                        text = errorMessage ?: "Point at the restaurant's QR code",
-                        color = CardSurfaceWhite,
+                        text = errorMessage ?: "Apunta al código QR de la mesa del restaurante",
+                        color = if (errorMessage != null) StatusLongRed else CardSurfaceWhite,
                         style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (errorMessage != null) FontWeight.Bold else FontWeight.Normal,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(bottom = 28.dp)
@@ -170,24 +172,32 @@ fun ScanQrScreen(
                 }
             }
 
+            // Bottom Bar with Working Torch Control & Info
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-
-                BotonCircularOscuro {
-                    Text(text = "⚡", fontSize = 20.sp)
-                }
-
-                BotonCircularOscuro {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_dish_photo),
-                        contentDescription = "Galería",
-                        tint = CardSurfaceWhite,
-                        modifier = Modifier.size(22.dp)
-                    )
+                Surface(
+                    color = if (isTorchOn) UniandesAmber else Color.Black.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(24.dp),
+                    border = BorderStroke(1.dp, UniandesAmber),
+                    modifier = Modifier.clickable { isTorchOn = !isTorchOn }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = if (isTorchOn) "🔦 Linterna Encendida" else "⚡ Encender Linterna",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isTorchOn) ShadowGrey else CardSurfaceWhite
+                        )
+                    }
                 }
             }
 
@@ -212,12 +222,12 @@ fun ScanQrScreen(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "¡Visit verified!",
+                                text = "¡Visita Verificada!",
                                 color = CardSurfaceWhite,
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "QR detected: ${scannedValue ?: "El Corral Uniandes"}. Opening review...",
+                                text = "QR detectado: ${scannedValue}. Abriendo reseña...",
                                 color = CardSurfaceWhite,
                                 style = MaterialTheme.typography.bodySmall
                             )
@@ -231,13 +241,23 @@ fun ScanQrScreen(
 
 @androidx.annotation.OptIn(ExperimentalGetImage::class)
 @Composable
-private fun CameraQrPreview(onQrDetected: (String) -> Unit) {
+private fun CameraQrPreview(
+    isTorchOn: Boolean = false,
+    onQrDetected: (String) -> Unit
+) {
     val context = LocalContext.current
     val lifecycleOwner = context as LifecycleOwner
     val currentOnQrDetected by rememberUpdatedState(onQrDetected)
+    var cameraInstance by remember { mutableStateOf<Camera?>(null) }
 
     val previewView = remember {
         PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
+    }
+
+    LaunchedEffect(isTorchOn, cameraInstance) {
+        try {
+            cameraInstance?.cameraControl?.enableTorch(isTorchOn)
+        } catch (_: Exception) {}
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -279,15 +299,13 @@ private fun CameraQrPreview(onQrDetected: (String) -> Unit) {
                     it.setSurfaceProvider(previewView.surfaceProvider)
                 }
                 provider.unbindAll()
-                provider.bindToLifecycle(
+                cameraInstance = provider.bindToLifecycle(
                     lifecycleOwner,
                     CameraSelector.DEFAULT_BACK_CAMERA,
                     preview,
                     analysis
                 )
-            } catch (_: Exception) {
-                
-            }
+            } catch (_: Exception) {}
         }, ContextCompat.getMainExecutor(context))
 
         onDispose {
@@ -302,25 +320,4 @@ private fun CameraQrPreview(onQrDetected: (String) -> Unit) {
         factory = { previewView },
         modifier = Modifier.fillMaxSize()
     )
-}
-
-@Composable
-fun BotonCircularOscuro(contenido: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .background(Color(0xFF333333)),
-        contentAlignment = Alignment.Center
-    ) {
-        contenido()
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun ScanQrScreenPreview() {
-    UniandesFoodTheme {
-        ScanQrScreen()
-    }
 }

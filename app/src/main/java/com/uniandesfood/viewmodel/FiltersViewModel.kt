@@ -45,8 +45,16 @@ class FiltersViewModel(
         _criteria.value = _criteria.value.copy(isLactoseFreeSelected = enabled)
     }
 
-    fun onPaymentSelected(payment: String) {
-        _criteria.value = _criteria.value.copy(selectedPayment = payment)
+    fun onPaymentToggled(payment: String) {
+        val current = _criteria.value.selectedPayments.toMutableSet()
+        if (current.contains(payment)) {
+            if (current.size > 1) {
+                current.remove(payment)
+            }
+        } else {
+            current.add(payment)
+        }
+        _criteria.value = _criteria.value.copy(selectedPayments = current)
     }
 
     fun applyFilters(): FilterCriteria {

@@ -231,8 +231,11 @@ fun RestaurantDetailScreen(
                             ) {
                                 Text(
                                     text = restaurantName,
-                                    style = MaterialTheme.typography.headlineLarge.copy(fontSize = 22.sp),
-                                    color = ShadowGrey
+                                    style = MaterialTheme.typography.headlineLarge.copy(fontSize = 20.sp),
+                                    color = ShadowGrey,
+                                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 // Traffic-light Wait Time Badge
                                 val statusColor = when (waitTimeCategory) {
@@ -264,7 +267,7 @@ fun RestaurantDetailScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -276,7 +279,7 @@ fun RestaurantDetailScreen(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Text(
-                                    text = ratingText,
+                                    text = "${selectedRestaurant?.rating ?: 4.8} ★ Verified Campus Spot",
                                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                                     color = UniandesAmber
                                 )

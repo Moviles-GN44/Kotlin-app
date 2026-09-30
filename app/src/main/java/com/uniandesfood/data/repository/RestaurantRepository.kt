@@ -400,8 +400,9 @@ class RestaurantRepository(
             val matchesVegan = !criteria.isVeganSelected || restaurant.isVeganFriendly
             val matchesGlutenFree = !criteria.isGlutenFreeSelected || restaurant.isGlutenFreeFriendly
             val matchesLactoseFree = !criteria.isLactoseFreeSelected || restaurant.isLactoseFreeFriendly
+            val matchesPayment = criteria.selectedPayments.isEmpty() || restaurant.paymentMethods.any { it in criteria.selectedPayments }
 
-            matchesWalkTime && matchesBudget && matchesVegan && matchesGlutenFree && matchesLactoseFree
+            matchesWalkTime && matchesBudget && matchesVegan && matchesGlutenFree && matchesLactoseFree && matchesPayment
         }.sortedBy { it.walkDistancesFromBuilding[criteria.selectedBuilding] ?: 99 }
     }
 }

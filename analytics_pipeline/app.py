@@ -12,6 +12,16 @@ app = Flask(__name__)
 
 FIRESTORE_URL = "https://firestore.googleapis.com/v1/projects/uniandesfood/databases/(default)/documents/telemetry_events"
 
+RESTAURANT_NAMES = {
+    "el_toro_rgd": "El Toro (RGD)",
+    "one_burrito_ml": "One Burrito (ML)",
+    "one_burrito_rgd": "One Burrito (RGD)",
+    "burger_play_rgd": "Burger Play (RGD)",
+    "burger_play_sd": "Burger Play (SD)",
+    "la_cabra_sanduchera_rgd": "La Cabra Sanduchera",
+    "la_liebre_franco": "La Liebre (Franco)"
+}
+
 def parse_firestore_value(val):
     if not isinstance(val, dict):
         return val
@@ -50,9 +60,10 @@ def calculate_metrics(events):
     # 1. BQ6 - Samuel: Filter Session Duration, Buildings, Dietary, Budgets
     filter_events = [e for e in events if e.get("eventName") == "samuel_bq_filter_session"]
     durations = [float(e.get("params", {}).get("duration_sec", 0)) for e in filter_events if "duration_sec" in e.get("params", {})]
-    avg_duration = round(sum(durations) / max(len(durations), 1), 1)
+    
+    avg_duration = round(sum(durations) / len(durations), 1) if durations else "N/A"
 
-    buildings = {}
+    buildings = {"ML": 0, "RGD": 0, "Franco": 0, "SD": 0, "C": 0, "W": 0}
     dietary_counts = {"Vegan": 0, "Gluten-Free": 0, "Lactose-Free": 0}
     budget_counts = {"CHEAP": 0, "MEDIUM": 0, "HIGH": 0}
     duration_buckets = {"< 5s": 0, "5-10s": 0, "10-20s": 0, "> 20s": 0}
@@ -62,9 +73,9 @@ def calculate_metrics(events):
         bldg = params.get("building", "ML")
         buildings[bldg] = buildings.get(bldg, 0) + 1
 
-        if params.get("is_vegan"): dietary_counts["Vegan"] += 1
-        if params.get("is_gluten_free"): dietary_counts["Gluten-Free"] += 1
-        if params.get("is_lactose_free"): dietary_counts["Lactose-Free"] += 1
+        if params.get("is_vegan") is True: dietary_counts["Vegan"] += 1
+        if params.get("is_gluten_free") is True: dietary_counts["Gluten-Free"] += 1
+        if params.get("is_lactose_free") is True: dietary_counts["Lactose-Free"] += 1
 
         bg = params.get("budget_range", "MEDIUM")
         budget_counts[bg] = budget_counts.get(bg, 0) + 1
@@ -79,18 +90,19 @@ def calculate_metrics(events):
     inspection_events = [e for e in events if e.get("eventName") == "karin_bq_menu_inspection"]
     inspected_count = sum(1 for e in inspection_events if e.get("params", {}).get("checked_photos", False))
     total_inspections = len(inspection_events)
-    inspection_rate = round((inspected_count / max(total_inspections, 1)) * 100, 1)
+    inspection_rate = round((inspected_count / total_inspections) * 100, 1) if total_inspections > 0 else "N/A"
 
     inspected_restaurants = {}
     for e in inspection_events:
         params = e.get("params", {})
-        rid = params.get("restaurant_id", "General")
-        inspected_restaurants[rid] = inspected_restaurants.get(rid, 0) + 1
+        rid = params.get("restaurant_id", "general")
+        friendly_name = RESTAURANT_NAMES.get(rid, rid)
+        inspected_restaurants[friendly_name] = inspected_restaurants.get(friendly_name, 0) + 1
 
     # 3. QR Reviews Telemetry
     review_events = [e for e in events if e.get("eventName") == "qr_review_submission"]
-    ratings = [int(e.get("params", {}).get("rating", 0)) for e in review_events if e.get("params", {}).get("is_completed", False)]
-    avg_rating = round(sum(ratings) / max(len(ratings), 1), 1) if ratings else 0.0
+    ratings = [int(e.get("params", {}).get("rating", 0)) for e in review_events if e.get("params", {}).get("is_completed", False) and int(e.get("params", {}).get("rating", 0)) > 0]
+    avg_rating = round(sum(ratings) / len(ratings), 1) if ratings else "N/A"
     completed_reviews = sum(1 for e in review_events if e.get("params", {}).get("is_completed", False))
     cancelled_reviews = sum(1 for e in review_events if not e.get("params", {}).get("is_completed", True))
 
@@ -141,7 +153,6 @@ def api_receive_telemetry():
     """Endpoint for direct HTTP event ingestion"""
     try:
         data = request.get_json(force=True)
-        # Forward or store if needed
         return jsonify({"status": "received", "event": data}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -196,7 +207,7 @@ def dashboard():
             <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg relative overflow-hidden">
                     <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Eventos Telemetría</div>
-                    <div class="text-3xl font-extrabold text-white mt-2" id="kpi-total">-</div>
+                    <div class="text-3xl font-extrabold text-white mt-2" id="kpi-total">0</div>
                     <div class="text-xs text-slate-500 mt-2 flex items-center">
                         <i class="fa-solid fa-cloud text-amber-400 mr-1.5"></i> Sincronizados en Firestore
                     </div>
@@ -204,7 +215,7 @@ def dashboard():
 
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg relative overflow-hidden">
                     <div class="text-xs font-semibold text-amber-400 uppercase tracking-wider">BQ6 - Tiempo en Filtros</div>
-                    <div class="text-3xl font-extrabold text-amber-400 mt-2"><span id="kpi-duration">-</span> <span class="text-lg font-normal text-slate-400">seg</span></div>
+                    <div class="text-3xl font-extrabold text-amber-400 mt-2"><span id="kpi-duration">N/A</span> <span class="text-lg font-normal text-slate-400" id="kpi-duration-unit"></span></div>
                     <div class="text-xs text-slate-500 mt-2 flex items-center">
                         <i class="fa-solid fa-stopwatch text-amber-400 mr-1.5"></i> Autor: Samuel (Tipo 2)
                     </div>
@@ -212,7 +223,7 @@ def dashboard():
 
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg relative overflow-hidden">
                     <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">BQ4 - Tasa Inspección Fotos</div>
-                    <div class="text-3xl font-extrabold text-emerald-400 mt-2"><span id="kpi-inspection">-</span> <span class="text-lg font-normal text-slate-400">%</span></div>
+                    <div class="text-3xl font-extrabold text-emerald-400 mt-2"><span id="kpi-inspection">N/A</span> <span class="text-lg font-normal text-slate-400" id="kpi-inspection-unit"></span></div>
                     <div class="text-xs text-slate-500 mt-2 flex items-center">
                         <i class="fa-solid fa-images text-emerald-400 mr-1.5"></i> Autora: Karin (Tipo 2)
                     </div>
@@ -220,7 +231,7 @@ def dashboard():
 
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg relative overflow-hidden">
                     <div class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Promedio Calificación QR</div>
-                    <div class="text-3xl font-extrabold text-indigo-400 mt-2"><span id="kpi-rating">-</span> <span class="text-lg text-amber-400">★</span></div>
+                    <div class="text-3xl font-extrabold text-indigo-400 mt-2"><span id="kpi-rating">N/A</span> <span class="text-lg text-amber-400" id="kpi-rating-unit"></span></div>
                     <div class="text-xs text-slate-500 mt-2 flex items-center">
                         <i class="fa-solid fa-qrcode text-indigo-400 mr-1.5"></i> Reseñas post-escaneo
                     </div>
@@ -340,7 +351,7 @@ def dashboard():
                         </thead>
                         <tbody id="events-table-body" class="divide-y divide-slate-800/60 font-mono">
                             <tr>
-                                <td colspan="4" class="py-4 text-center text-slate-500">Cargando eventos desde Firestore...</td>
+                                <td colspan="4" class="py-4 text-center text-slate-500">Esperando eventos en tiempo real desde la app...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -364,7 +375,7 @@ def dashboard():
                 const ctxBuildings = document.getElementById('chart-buildings').getContext('2d');
                 charts.buildings = new Chart(ctxBuildings, {
                     type: 'bar',
-                    data: { labels: [], datasets: [{ label: 'Usos', data: [], backgroundColor: '#38bdf8' }] },
+                    data: { labels: ['ML', 'RGD', 'Franco', 'SD', 'C', 'W'], datasets: [{ label: 'Usos', data: [0,0,0,0,0,0], backgroundColor: '#38bdf8' }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#334155' } }, x: { grid: { color: '#1e293b' } } } }
                 });
 
@@ -416,9 +427,31 @@ def dashboard():
 
                     // Update KPIs
                     document.getElementById('kpi-total').textContent = data.summary.total_events;
-                    document.getElementById('kpi-duration').textContent = data.summary.avg_filter_duration_sec;
-                    document.getElementById('kpi-inspection').textContent = data.summary.menu_inspection_rate_pct;
-                    document.getElementById('kpi-rating').textContent = data.summary.avg_qr_rating;
+
+                    if (data.summary.avg_filter_duration_sec === 'N/A') {
+                        document.getElementById('kpi-duration').textContent = 'N/A';
+                        document.getElementById('kpi-duration-unit').textContent = '';
+                    } else {
+                        document.getElementById('kpi-duration').textContent = data.summary.avg_filter_duration_sec;
+                        document.getElementById('kpi-duration-unit').textContent = 'seg';
+                    }
+
+                    if (data.summary.menu_inspection_rate_pct === 'N/A') {
+                        document.getElementById('kpi-inspection').textContent = 'N/A';
+                        document.getElementById('kpi-inspection-unit').textContent = '';
+                    } else {
+                        document.getElementById('kpi-inspection').textContent = data.summary.menu_inspection_rate_pct;
+                        document.getElementById('kpi-inspection-unit').textContent = '%';
+                    }
+
+                    if (data.summary.avg_qr_rating === 'N/A') {
+                        document.getElementById('kpi-rating').textContent = 'N/A';
+                        document.getElementById('kpi-rating-unit').textContent = '';
+                    } else {
+                        document.getElementById('kpi-rating').textContent = data.summary.avg_qr_rating;
+                        document.getElementById('kpi-rating-unit').textContent = '★';
+                    }
+
                     document.getElementById('last-updated').textContent = 'Actualizado: ' + new Date().toLocaleTimeString();
 
                     // Update Durations
@@ -430,8 +463,13 @@ def dashboard():
                     charts.buildings.data.datasets[0].data = Object.values(data.bq6_samuel.buildings);
                     charts.buildings.update();
 
-                    // Update Dietary
-                    charts.dietary.data.datasets[0].data = Object.values(data.bq6_samuel.dietary);
+                    // Update Dietary (Explicit mapping: Vegan, Gluten-Free, Lactose-Free)
+                    const dietary = data.bq6_samuel.dietary;
+                    charts.dietary.data.datasets[0].data = [
+                        dietary["Vegan"] || 0,
+                        dietary["Gluten-Free"] || 0,
+                        dietary["Lactose-Free"] || 0
+                    ];
                     charts.dietary.update();
 
                     // Update Photos
@@ -439,8 +477,14 @@ def dashboard():
                     charts.photos.update();
 
                     // Update Locales
-                    charts.locales.data.labels = Object.keys(data.bq4_karin.inspected_restaurants);
-                    charts.locales.data.datasets[0].data = Object.values(data.bq4_karin.inspected_restaurants);
+                    const locales = data.bq4_karin.inspected_restaurants;
+                    if (Object.keys(locales).length > 0) {
+                        charts.locales.data.labels = Object.keys(locales);
+                        charts.locales.data.datasets[0].data = Object.values(locales);
+                    } else {
+                        charts.locales.data.labels = ['Sin datos'];
+                        charts.locales.data.datasets[0].data = [0];
+                    }
                     charts.locales.update();
 
                     // Update Rating Dist
@@ -465,6 +509,12 @@ def dashboard():
                                 </tr>
                             `;
                         }).join('');
+                    } else {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="4" class="py-6 text-center text-slate-500">No hay eventos todavía. Interactúa con la app para ver eventos en vivo.</td>
+                            </tr>
+                        `;
                     }
                 } catch (err) {
                     console.error('Error fetching stats:', err);

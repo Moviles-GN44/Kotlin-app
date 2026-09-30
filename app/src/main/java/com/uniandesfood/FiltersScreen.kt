@@ -1,5 +1,6 @@
 package com.uniandesfood
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,13 +27,13 @@ fun FiltersScreen(
 ) {
     val criteria = viewModel?.criteria?.collectAsState()?.value
 
-    var selectedBuilding by remember(criteria) { mutableStateOf(criteria?.selectedBuilding ?: "ML") }
-    var maxWalkTime by remember(criteria) { mutableFloatStateOf(criteria?.maxWalkTimeMinutes ?: 10f) }
-    var selectedBudget by remember(criteria) { mutableStateOf(criteria?.selectedBudget ?: BudgetRange.MEDIUM) }
-    var isVeganSelected by remember(criteria) { mutableStateOf(criteria?.isVeganSelected ?: false) }
-    var isGlutenFreeSelected by remember(criteria) { mutableStateOf(criteria?.isGlutenFreeSelected ?: false) }
-    var isLactoseFreeSelected by remember(criteria) { mutableStateOf(criteria?.isLactoseFreeSelected ?: false) }
-    var selectedPayment by remember(criteria) { mutableStateOf(criteria?.selectedPayment ?: "Nequi / Daviplata") }
+    val selectedBuilding = criteria?.selectedBuilding ?: "ML"
+    val maxWalkTime = criteria?.maxWalkTimeMinutes ?: 10f
+    val selectedBudget = criteria?.selectedBudget ?: BudgetRange.MEDIUM
+    val isVeganSelected = criteria?.isVeganSelected ?: false
+    val isGlutenFreeSelected = criteria?.isGlutenFreeSelected ?: false
+    val isLactoseFreeSelected = criteria?.isLactoseFreeSelected ?: false
+    val selectedPayments = criteria?.selectedPayments ?: setOf("Nequi", "Cards", "Cash")
 
     LaunchedEffect(Unit) {
         viewModel?.resetSessionTimer()
@@ -102,14 +103,15 @@ fun FiltersScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        listOf("ML", "RGD", "Franco", "C", "W").forEach { building ->
+                        listOf("ML", "RGD", "Franco", "SD", "C", "W").forEach { building ->
                             FilterChip(
                                 selected = selectedBuilding == building,
                                 onClick = {
-                                    selectedBuilding = building
                                     viewModel?.onBuildingSelected(building)
                                 },
                                 label = { Text(building, style = MaterialTheme.typography.labelSmall) },
@@ -160,7 +162,6 @@ fun FiltersScreen(
                     Slider(
                         value = maxWalkTime,
                         onValueChange = {
-                            maxWalkTime = it
                             viewModel?.onWalkTimeChanged(it)
                         },
                         valueRange = 3f..25f,
@@ -207,7 +208,6 @@ fun FiltersScreen(
                             FilterChip(
                                 selected = selectedBudget == budget,
                                 onClick = {
-                                    selectedBudget = budget
                                     viewModel?.onBudgetSelected(budget)
                                 },
                                 label = { Text(budget.label, style = MaterialTheme.typography.bodySmall) },
@@ -270,7 +270,6 @@ fun FiltersScreen(
                         Switch(
                             checked = isVeganSelected,
                             onCheckedChange = {
-                                isVeganSelected = it
                                 viewModel?.onVeganToggled(it)
                             },
                             colors = SwitchDefaults.colors(
@@ -304,7 +303,6 @@ fun FiltersScreen(
                         Switch(
                             checked = isGlutenFreeSelected,
                             onCheckedChange = {
-                                isGlutenFreeSelected = it
                                 viewModel?.onGlutenFreeToggled(it)
                             },
                             colors = SwitchDefaults.colors(
@@ -338,7 +336,6 @@ fun FiltersScreen(
                         Switch(
                             checked = isLactoseFreeSelected,
                             onCheckedChange = {
-                                isLactoseFreeSelected = it
                                 viewModel?.onLactoseFreeToggled(it)
                             },
                             colors = SwitchDefaults.colors(
@@ -350,7 +347,7 @@ fun FiltersScreen(
                 }
             }
 
-            // 5. Accepted Payment Methods
+            // 5. Accepted Payment Methods (Multi-Select)
             Card(
                 colors = CardDefaults.cardColors(containerColor = CardSurfaceWhite),
                 shape = RoundedCornerShape(16.dp),
@@ -368,22 +365,24 @@ fun FiltersScreen(
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "Preferred Payment Method",
+                            text = "Preferred Payment Methods (Multi-Select)",
                             style = MaterialTheme.typography.titleMedium,
                             color = ShadowGrey
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        listOf("Nequi / Daviplata", "Cards", "Cash").forEach { payment ->
+                        listOf("Nequi", "Daviplata", "Cards", "Cash").forEach { payment ->
+                            val isSelected = selectedPayments.contains(payment)
                             FilterChip(
-                                selected = selectedPayment == payment,
+                                selected = isSelected,
                                 onClick = {
-                                    selectedPayment = payment
-                                    viewModel?.onPaymentSelected(payment)
+                                    viewModel?.onPaymentToggled(payment)
                                 },
                                 label = { Text(payment, style = MaterialTheme.typography.bodySmall) },
                                 colors = FilterChipDefaults.filterChipColors(

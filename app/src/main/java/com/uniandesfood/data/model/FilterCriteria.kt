@@ -13,5 +13,5 @@ data class FilterCriteria(
     val isVeganSelected: Boolean = false,
     val isGlutenFreeSelected: Boolean = false,
     val isLactoseFreeSelected: Boolean = false,
-    val selectedPayment: String = "Nequi / Daviplata"
+    val selectedPayments: Set<String> = setOf("Nequi", "Cards", "Cash")
 )
