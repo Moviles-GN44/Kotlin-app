@@ -11,6 +11,14 @@ data class MenuItem(
     val isLactoseFree: Boolean = false,
     val photoUrl: String = ""
 ) {
+    val displayPrice: String
+        get() = if (formattedPrice.isNotBlank() && !formattedPrice.startsWith(",")) {
+            formattedPrice
+        } else if (priceCOP > 0) {
+            "$" + String.format("%,d", priceCOP).replace(',', '.') + " COP"
+        } else {
+            ""
+        }
     fun toMap(): Map<String, Any> {
         return mapOf(
             "id" to id,

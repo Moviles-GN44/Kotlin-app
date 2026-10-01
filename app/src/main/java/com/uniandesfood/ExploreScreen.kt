@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,9 +31,8 @@ fun ExploreScreen(
     viewModel: RestaurantViewModel? = null,
     onApplyFilters: () -> Unit = {}
 ) {
-    var categoriaSeleccionada by remember { mutableStateOf("Executive Lunch") }
+    var categoriaSeleccionada by remember { mutableStateOf("Todos") }
     var selectedBuilding by remember { mutableStateOf(viewModel?.currentBuilding ?: "ML") }
-    var buildingMenuExpanded by remember { mutableStateOf(false) }
 
     var tiempoCaminando by remember { mutableStateOf("< 10 min") }
     var presupuesto by remember { mutableStateOf(5000f..25000f) }
@@ -44,7 +42,6 @@ fun ExploreScreen(
     var sinGluten by remember { mutableStateOf(false) }
 
     var selectedPayments by remember { mutableStateOf(setOf("Nequi", "Cards", "Cash")) }
-    var abiertoAhora by remember { mutableStateOf(true) }
 
     val campusBuildings = listOf("ML", "RGD", "Franco", "SD", "C", "W")
 
@@ -58,27 +55,31 @@ fun ExploreScreen(
     ) {
 
         Text(
-            text = "Explore",
+            text = "Filtros",
             style = MaterialTheme.typography.headlineLarge,
             color = ShadowGrey
         )
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Horizontally scrollable categories row with full clean names
+        // Horizontally scrollable categories row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            listOf("Executive Lunch", "Fast Food", "Healthy", "Desserts", "Café").forEach { categoria ->
+            listOf("Todos", "Executive Lunch", "Fast Food", "Healthy", "Desserts", "Café").forEach { categoria ->
                 CategoriaChip(
                     texto = categoria,
                     seleccionado = categoriaSeleccionada == categoria,
                     onClick = {
                         categoriaSeleccionada = categoria
-                        viewModel?.filterByCategory(categoria)
+                        if (categoria == "Todos") {
+                            viewModel?.filterByCategory("")
+                        } else {
+                            viewModel?.filterByCategory(categoria)
+                        }
                     }
                 )
             }
@@ -86,6 +87,7 @@ fun ExploreScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Card containing unified filters
         Card(
             colors = CardDefaults.cardColors(containerColor = CardSurfaceWhite),
             shape = RoundedCornerShape(20.dp),
@@ -93,61 +95,78 @@ fun ExploreScreen(
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
 
-                Text(
-                    text = "Advanced Filters",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = ShadowGrey
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Interactive Building Selector
+                // 1. Reference Campus Building
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_building),
+                        contentDescription = "Edificio",
+                        tint = UniandesAmber,
+                        modifier = Modifier.size(20.dp)
+                    )
                     Text(
-                        text = "Walking Time",
+                        text = "Edificio de Origen (Campus)",
                         style = MaterialTheme.typography.titleMedium,
                         color = ShadowGrey
                     )
-                    Box {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "Calcula la distancia caminando según donde estés:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    campusBuildings.forEach { building ->
+                        val isSelected = selectedBuilding == building
+                        Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { buildingMenuExpanded = true }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isSelected) UniandesAmber else BackgroundOffWhite)
+                                .clickable {
+                                    selectedBuilding = building
+                                }
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
                         ) {
                             Text(
-                                text = "From $selectedBuilding",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                color = UniandesAmber
+                                text = "Edificio $building",
+                                color = if (isSelected) ShadowGrey else TextPrimary,
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
                             )
-                            Icon(
-                                imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = "Elegir edificio",
-                                tint = UniandesAmber,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-
-                        DropdownMenu(
-                            expanded = buildingMenuExpanded,
-                            onDismissRequest = { buildingMenuExpanded = false }
-                        ) {
-                            campusBuildings.forEach { building ->
-                                DropdownMenuItem(
-                                    text = { Text("Edificio $building", fontWeight = if (building == selectedBuilding) FontWeight.Bold else FontWeight.Normal) },
-                                    onClick = {
-                                        selectedBuilding = building
-                                        buildingMenuExpanded = false
-                                    }
-                                )
-                            }
                         }
                     }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 2. Walking Time
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_walk_time),
+                        contentDescription = "Tiempo",
+                        tint = UniandesAmber,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "Tiempo Máximo Caminando",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ShadowGrey
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -167,42 +186,71 @@ fun ExploreScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
+                // 3. Budget Range
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Budget",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = ShadowGrey
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_price),
+                            contentDescription = "Presupuesto",
+                            tint = UniandesAmber,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Presupuesto",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = ShadowGrey
+                        )
+                    }
                     Text(
                         text = "$${presupuesto.start.toInt().formatCop()} - $${presupuesto.endInclusive.toInt().formatCop()} COP",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = UniandesAmber
                     )
                 }
 
+                Spacer(modifier = Modifier.height(10.dp))
+
                 RangeSlider(
                     value = presupuesto,
                     onValueChange = { presupuesto = it },
-                    valueRange = 0f..30000f,
+                    valueRange = 5000f..35000f,
+                    steps = 5,
                     colors = SliderDefaults.colors(
                         thumbColor = UniandesAmber,
                         activeTrackColor = UniandesAmber,
                         inactiveTrackColor = BorderLight
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // 4. Dietary Restrictions
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_vegan),
+                        contentDescription = "Dietario",
+                        tint = StatusFastGreen,
+                        modifier = Modifier.size(20.dp)
                     )
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Dietary Restrictions",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = ShadowGrey
-                )
+                    Text(
+                        text = "Restricciones Dietarias",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ShadowGrey
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -212,24 +260,36 @@ fun ExploreScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    DietaChip(texto = "Vegetarian", marcado = vegetariano) {
+                    DietaChip(texto = "Vegetariano", marcado = vegetariano) {
                         vegetariano = !vegetariano
                     }
-                    DietaChip(texto = "Vegan", marcado = vegano) {
+                    DietaChip(texto = "Vegano", marcado = vegano) {
                         vegano = !vegano
                     }
-                    DietaChip(texto = "Gluten-Free", marcado = sinGluten) {
+                    DietaChip(texto = "Sin Gluten", marcado = sinGluten) {
                         sinGluten = !sinGluten
                     }
                 }
 
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                Text(
-                    text = "Payment Method (Multi-Select)",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = ShadowGrey
-                )
+                // 5. Payment Methods
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_payment),
+                        contentDescription = "Pago",
+                        tint = UniandesAmber,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "Métodos de Pago (Multi-Selección)",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = ShadowGrey
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -257,38 +317,7 @@ fun ExploreScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(22.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_open_now),
-                            contentDescription = "Open Now",
-                            tint = StatusFastGreen,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Open Now",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = ShadowGrey
-                        )
-                    }
-                    Switch(
-                        checked = abiertoAhora,
-                        onCheckedChange = { abiertoAhora = it },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = CardSurfaceWhite,
-                            checkedTrackColor = StatusFastGreen
-                        )
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(22.dp))
+                Spacer(modifier = Modifier.height(26.dp))
 
                 Button(
                     onClick = {
@@ -324,7 +353,7 @@ fun ExploreScreen(
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Text(
-                        text = "Apply Filters",
+                        text = "Aplicar Filtros",
                         style = MaterialTheme.typography.labelLarge,
                         color = ShadowGrey
                     )

@@ -500,8 +500,8 @@ fun RestaurantDetailScreen(
                             }
 
                             Text(
-                                text = dish.formattedPrice,
-                                style = MaterialTheme.typography.titleLarge,
+                                text = dish.displayPrice,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = UniandesAmber
                             )
                         }

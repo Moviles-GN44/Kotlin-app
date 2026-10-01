@@ -7,8 +7,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,9 +27,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,16 +52,17 @@ fun MapScreen(
 
     var searchQuery by remember { mutableStateOf("") }
 
-    // Map positions relative to campus canvas [0f..1f, 0f..1f]
+    // Map positions relative to campus viewport [0f..1f, 0f..1f]
+    // Well distributed within visible canvas bounds
     val restaurantMapCoords = remember {
         mapOf(
-            "one_burrito_ml" to Offset(0.32f, 0.28f),      // ML Building Area
-            "el_toro_rgd" to Offset(0.54f, 0.52f),         // RGD Area
-            "one_burrito_rgd" to Offset(0.68f, 0.48f),     // RGD East
-            "burger_play_rgd" to Offset(0.50f, 0.62f),     // RGD South
-            "la_cabra_sanduchera_rgd" to Offset(0.60f, 0.68f), // RGD Plaza
-            "burger_play_sd" to Offset(0.25f, 0.78f),      // SD Building Area
-            "la_liebre_franco" to Offset(0.78f, 0.35f)     // Franco Area
+            "one_burrito_ml" to Pair(0.24f, 0.28f),         // ML Building area
+            "el_toro_rgd" to Pair(0.52f, 0.44f),            // RGD central plaza
+            "one_burrito_rgd" to Pair(0.72f, 0.46f),        // RGD east
+            "burger_play_rgd" to Pair(0.48f, 0.58f),        // RGD south terrace
+            "la_cabra_sanduchera_rgd" to Pair(0.70f, 0.60f),// RGD patio
+            "la_liebre_franco" to Pair(0.68f, 0.25f),       // Franco building
+            "burger_play_sd" to Pair(0.25f, 0.68f)          // SD building
         )
     }
 
@@ -69,110 +71,138 @@ fun MapScreen(
             .fillMaxSize()
             .background(BackgroundOffWhite)
     ) {
-        // 1. Campus Interactive Map Canvas
+        // 1. Campus Map Container
         BoxWithConstraints(
             modifier = Modifier.fillMaxSize()
         ) {
-            val widthPx = constraints.maxWidth.toFloat()
-            val heightPx = constraints.maxHeight.toFloat()
+            val mapWidthDp = maxWidth
+            val mapHeightDp = maxHeight
 
-            // Campus Base Map Drawing
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectTapGestures { offset ->
-                            // Find closest restaurant to tap
-                            val tappedRest = restaurants.minByOrNull { rest ->
-                                val normCoord = restaurantMapCoords[rest.id] ?: Offset(0.5f, 0.5f)
-                                val markerX = normCoord.x * widthPx
-                                val markerY = normCoord.y * (heightPx * 0.72f) + (heightPx * 0.12f)
-                                val dx = offset.x - markerX
-                                val dy = offset.y - markerY
-                                (dx * dx) + (dy * dy)
-                            }
-                            if (tappedRest != null) {
-                                viewModel?.selectRestaurant(tappedRest.id)
-                            }
-                        }
-                    }
-            ) {
-                // Background Campus Zone
+            // Canvas: Roads, Campus Greens, Walkways
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+
+                // Campus Background Slate
                 drawRect(
-                    color = Color(0xFFF1F5F9), // Light campus slate
+                    color = Color(0xFFF1F5F9),
                     size = size
                 )
 
-                // Green Park / Central Campus Gardens
+                // Central Campus Green Zone (Jardines del Bobo / Plazoleta)
                 drawRoundRect(
-                    color = Color(0xFFDCFCE7), // Mint green park
-                    topLeft = Offset(widthPx * 0.18f, heightPx * 0.22f),
-                    size = Size(widthPx * 0.64f, heightPx * 0.44f),
-                    cornerRadius = CornerRadius(24f, 24f)
+                    color = Color(0xFFDCFCE7),
+                    topLeft = Offset(w * 0.12f, h * 0.20f),
+                    size = Size(w * 0.76f, h * 0.48f),
+                    cornerRadius = CornerRadius(32f, 32f)
                 )
 
-                // Campus Pathways (Walkways)
+                // Secondary Garden (Bosque Uniandes / C-W Zone)
+                drawRoundRect(
+                    color = Color(0xFFE8F5E9),
+                    topLeft = Offset(w * 0.15f, h * 0.12f),
+                    size = Size(w * 0.40f, h * 0.12f),
+                    cornerRadius = CornerRadius(20f, 20f)
+                )
+
+                // Campus Walkways (Senderos peatonales)
                 drawLine(
                     color = Color(0xFFE2E8F0),
-                    start = Offset(widthPx * 0.10f, heightPx * 0.30f),
-                    end = Offset(widthPx * 0.90f, heightPx * 0.60f),
+                    start = Offset(w * 0.10f, h * 0.26f),
+                    end = Offset(w * 0.88f, h * 0.55f),
                     strokeWidth = 14f
                 )
                 drawLine(
                     color = Color(0xFFE2E8F0),
-                    start = Offset(widthPx * 0.32f, heightPx * 0.18f),
-                    end = Offset(widthPx * 0.55f, heightPx * 0.75f),
+                    start = Offset(w * 0.28f, h * 0.15f),
+                    end = Offset(w * 0.50f, h * 0.72f),
                     strokeWidth = 12f
                 )
-
-                // Campus Buildings Outlines & Labels (ML, RGD, Franco, SD, C, W)
-                val buildings = listOf(
-                    Triple(Offset(widthPx * 0.24f, heightPx * 0.22f), Size(widthPx * 0.22f, heightPx * 0.12f), "Edificio ML"),
-                    Triple(Offset(widthPx * 0.48f, heightPx * 0.46f), Size(widthPx * 0.26f, heightPx * 0.14f), "Edificio RGD"),
-                    Triple(Offset(widthPx * 0.72f, heightPx * 0.28f), Size(widthPx * 0.22f, heightPx * 0.12f), "Edificio Franco"),
-                    Triple(Offset(widthPx * 0.15f, heightPx * 0.72f), Size(widthPx * 0.25f, heightPx * 0.12f), "Edificio SD")
+                drawLine(
+                    color = Color(0xFFE2E8F0),
+                    start = Offset(w * 0.70f, h * 0.22f),
+                    end = Offset(w * 0.45f, h * 0.65f),
+                    strokeWidth = 10f
                 )
+            }
 
-                for ((bTopLeft, bSize, bName) in buildings) {
-                    drawRoundRect(
-                        color = Color.White,
-                        topLeft = bTopLeft,
-                        size = bSize,
-                        cornerRadius = CornerRadius(16f, 16f)
-                    )
-                    drawRoundRect(
-                        color = Color(0xFFCBD5E1),
-                        topLeft = bTopLeft,
-                        size = bSize,
-                        cornerRadius = CornerRadius(16f, 16f),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5f)
-                    )
+            // Campus Building Zones Overlay with visible labels
+            val buildingLayout = listOf(
+                Pair(Pair(0.08f, 0.22f), "Edificio ML\n(Ingeniería)"),
+                Pair(Pair(0.42f, 0.38f), "Edificio RGD\n(Centro Deportivo)"),
+                Pair(Pair(0.58f, 0.15f), "Edificio Franco\n(Administración)"),
+                Pair(Pair(0.08f, 0.62f), "Edificio SD\n(Salones)")
+            )
+
+            buildingLayout.forEach { (coord, name) ->
+                Box(
+                    modifier = Modifier
+                        .offset(
+                            x = mapWidthDp * coord.first,
+                            y = mapHeightDp * coord.second
+                        )
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.88f))
+                        .border(1.dp, Color(0xFFCBD5E1), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_building),
+                            contentDescription = null,
+                            tint = Color(0xFF64748B),
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                lineHeight = 11.sp
+                            ),
+                            color = Color(0xFF475569)
+                        )
+                    }
                 }
             }
 
-            // Restaurant Pins Overlay
+            // Visible Interactive Restaurant Pins
             restaurants.forEach { rest ->
-                val normCoord = restaurantMapCoords[rest.id] ?: Offset(0.5f, 0.5f)
+                val coord = restaurantMapCoords[rest.id] ?: Pair(0.5f, 0.5f)
                 val isSelected = rest.id == selectedRestaurant?.id
-                val xPos = normCoord.x * widthPx
-                val yPos = normCoord.y * (heightPx * 0.70f) + (heightPx * 0.12f)
+                val shortName = when (rest.id) {
+                    "one_burrito_ml" -> "One Burrito (ML)"
+                    "el_toro_rgd" -> "El Toro (RGD)"
+                    "one_burrito_rgd" -> "One Burrito (RGD)"
+                    "burger_play_rgd" -> "Burger Play (RGD)"
+                    "la_cabra_sanduchera_rgd" -> "La Cabra"
+                    "la_liebre_franco" -> "La Liebre"
+                    "burger_play_sd" -> "Burger Play (SD)"
+                    else -> rest.name
+                }
 
                 Box(
                     modifier = Modifier
                         .offset(
-                            x = (xPos - 50).dp.coerceAtLeast(10.dp),
-                            y = (yPos - 25).dp.coerceAtLeast(100.dp)
+                            x = (mapWidthDp * coord.first) - 40.dp,
+                            y = (mapHeightDp * coord.second) - 16.dp
                         )
-                        .clip(RoundedCornerShape(20.dp))
+                        .shadow(
+                            elevation = if (isSelected) 8.dp else 3.dp,
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .clip(RoundedCornerShape(16.dp))
                         .background(if (isSelected) UniandesAmber else CardSurfaceWhite)
                         .border(
                             width = if (isSelected) 2.dp else 1.dp,
-                            color = if (isSelected) UniandesAmber else BorderLight,
-                            shape = RoundedCornerShape(20.dp)
+                            color = if (isSelected) UniandesAmber else Color(0xFFE2E8F0),
+                            shape = RoundedCornerShape(16.dp)
                         )
-                        .shadow(elevation = if (isSelected) 8.dp else 2.dp, shape = RoundedCornerShape(20.dp))
                         .clickable { viewModel?.selectRestaurant(rest.id) }
-                        .padding(horizontal = 8.dp, vertical = 5.dp)
+                        .padding(horizontal = 7.dp, vertical = 4.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -181,13 +211,13 @@ fun MapScreen(
                         Icon(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = rest.name,
-                            tint = if (isSelected) ShadowGrey else UniandesAmber,
-                            modifier = Modifier.size(16.dp)
+                            tint = if (isSelected) ShadowGrey else StatusLongRed,
+                            modifier = Modifier.size(15.dp)
                         )
                         Text(
-                            text = rest.name.replace(" - RGD", "").replace(" - ML", "").replace(" - Franco", "").replace(" - SD", ""),
+                            text = shortName,
                             style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                                 fontSize = 11.sp
                             ),
                             color = if (isSelected) ShadowGrey else TextPrimary,
@@ -198,18 +228,21 @@ fun MapScreen(
             }
         }
 
-        // 2. Top Campus Search Bar & Filter Button
+        // 2. Top Header: Search Bar & Restaurant Quick Chips
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .padding(top = 8.dp)
         ) {
+            // Search Bar Surface
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = CardSurfaceWhite,
-                shadowElevation = 6.dp,
-                modifier = Modifier.fillMaxWidth()
+                shadowElevation = 4.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -230,7 +263,7 @@ fun MapScreen(
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "Buscar en el campus Uniandes...",
+                            text = "Buscar restaurante en el campus...",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextMuted
                         )
@@ -242,11 +275,11 @@ fun MapScreen(
                         color = UniandesAmber.copy(alpha = 0.15f),
                         modifier = Modifier
                             .clickable { onOpenFilters() }
-                            .padding(4.dp)
+                            .padding(2.dp)
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_explore),
-                            contentDescription = "Filters",
+                            contentDescription = "Filtros",
                             tint = UniandesAmber,
                             modifier = Modifier
                                 .size(28.dp)
@@ -255,9 +288,54 @@ fun MapScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Quick Selection Chips Row for all campus restaurants
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                restaurants.forEach { rest ->
+                    val isSelected = rest.id == selectedRestaurant?.id
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isSelected) UniandesAmber else CardSurfaceWhite.copy(alpha = 0.95f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (isSelected) UniandesAmber else BorderLight
+                        ),
+                        shadowElevation = if (isSelected) 3.dp else 1.dp,
+                        modifier = Modifier.clickable { viewModel?.selectRestaurant(rest.id) }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = if (isSelected) ShadowGrey else UniandesAmber,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = rest.name.replace(" - RGD", "").replace(" - ML", "").replace(" - Franco", "").replace(" - SD", ""),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                ),
+                                color = if (isSelected) ShadowGrey else TextPrimary
+                            )
+                        }
+                    }
+                }
+            }
         }
 
-        // 3. Floating Bottom Restaurant Card (Matching Flutter video design)
+        // 3. Floating Bottom Restaurant Card
         if (selectedRestaurant != null) {
             val isFav = favorites.contains(selectedRestaurant.id)
             val walkMin = selectedRestaurant.walkDistancesFromBuilding[currentBuilding] ?: 2
@@ -273,12 +351,12 @@ fun MapScreen(
                 exit = fadeOut(),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = CardSurfaceWhite),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
