@@ -1,6 +1,7 @@
 package com.uniandesfood
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -55,6 +56,35 @@ fun RestaurantDetailScreen(
     val paymentsText = "Accepts: ${(selectedRestaurant?.paymentMethods ?: listOf("Nequi", "Daviplata", "Cards", "Cash")).joinToString(", ")}"
 
     val menuDishes = selectedRestaurant?.menu ?: emptyList()
+
+    // Estado del plato seleccionado
+    var selectedDish by remember { mutableStateOf<MenuItem?>(null) }
+
+    // Diálogo con la foto
+    selectedDish?.let { dish ->
+        AlertDialog(
+            onDismissRequest = { selectedDish = null },
+            confirmButton = {
+                TextButton(onClick = { selectedDish = null }) {
+                    Text("Close")
+                }
+            },
+            title = { Text(dish.name) },
+            text = {
+                Column {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_dish_photo),
+                        contentDescription = dish.name,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(dish.description)
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -376,7 +406,13 @@ fun RestaurantDetailScreen(
                     Card(
                         colors = CardDefaults.cardColors(containerColor = CardSurfaceWhite),
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        // c) Tarjeta clickeable
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selectedDish = dish
+                                viewModel?.onDishPhotoOpened(dish)
+                            }
                     ) {
                         Row(
                             modifier = Modifier
