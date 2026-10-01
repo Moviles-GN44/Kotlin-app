@@ -63,14 +63,6 @@ class RestaurantViewModel(
     fun selectRestaurant(restaurantId: String) {
         val found = restaurantRepository.getRestaurantById(restaurantId)
         _selectedRestaurant.value = found
-        
-        found?.let {
-            analyticsRepository.logMenuInspection(
-                restaurantId = it.id,
-                dishCount = it.menu.size,
-                checkedPhotos = true
-            )
-        }
     }
 
     fun findById(id: String): Restaurant? =
