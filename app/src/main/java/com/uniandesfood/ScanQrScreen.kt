@@ -44,11 +44,11 @@ import java.util.concurrent.Executors
 @Composable
 fun ScanQrScreen(
     onBack: () -> Unit = {},
-    visitaVerificada: Boolean = false,
+    verifiedVisit: Boolean = false,
     isValidQr: (String) -> Boolean = { true },
     onQrScanned: (String) -> Unit = {}
 ) {
-    val fondoCamara = Color(0xFF1A1A1A)
+    val cameraBackground = Color(0xFF1A1A1A)
     val context = LocalContext.current
     val isInPreview = LocalInspectionMode.current
 
@@ -75,7 +75,7 @@ fun ScanQrScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(fondoCamara)
+            .background(cameraBackground)
     ) {
         if (hasCameraPermission && !isInPreview) {
             CameraQrPreview(
@@ -87,7 +87,7 @@ fun ScanQrScreen(
                             scannedValue = value
                             onQrScanned(value)
                         } else {
-                            errorMessage = "QR no reconocido. Escanea un código de Uniandes Food."
+                            errorMessage = "Unrecognized QR. Scan a Uniandes Food code."
                         }
                     }
                 }
@@ -104,7 +104,7 @@ fun ScanQrScreen(
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Volver",
+                        contentDescription = "Back",
                         tint = CardSurfaceWhite
                     )
                 }
@@ -141,7 +141,7 @@ fun ScanQrScreen(
 
                 if (hasCameraPermission) {
                     Text(
-                        text = errorMessage ?: "Apunta al código QR de la mesa del restaurante",
+                        text = errorMessage ?: "Point at the QR code on the restaurant table",
                         color = if (errorMessage != null) StatusLongRed else CardSurfaceWhite,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = if (errorMessage != null) FontWeight.Bold else FontWeight.Normal,
@@ -192,7 +192,7 @@ fun ScanQrScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = if (isTorchOn) "🔦 Linterna Encendida" else "⚡ Encender Linterna",
+                            text = if (isTorchOn) "🔦 Flashlight On" else "⚡ Turn on Flashlight",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (isTorchOn) ShadowGrey else CardSurfaceWhite
@@ -201,7 +201,7 @@ fun ScanQrScreen(
                 }
             }
 
-            if (visitaVerificada || scannedValue != null) {
+            if (verifiedVisit || scannedValue != null) {
                 Surface(
                     color = StatusFastGreen,
                     shape = RoundedCornerShape(14.dp),
@@ -215,19 +215,19 @@ fun ScanQrScreen(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_verified),
-                            contentDescription = "Verificado",
+                            contentDescription = "Verified",
                             tint = CardSurfaceWhite,
                             modifier = Modifier.size(22.dp)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "¡Visita Verificada!",
+                                text = "Visit Verified!",
                                 color = CardSurfaceWhite,
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                text = "QR detectado: ${scannedValue}. Abriendo reseña...",
+                                text = "QR detected: ${scannedValue}. Opening review...",
                                 color = CardSurfaceWhite,
                                 style = MaterialTheme.typography.bodySmall
                             )

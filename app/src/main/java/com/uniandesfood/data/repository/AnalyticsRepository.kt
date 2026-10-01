@@ -41,7 +41,7 @@ class AnalyticsRepository(
 
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
-    // a) Session ID compartido durante la ejecución de la app
+    // a) Shared Session ID across app lifecycle
     companion object {
         val sessionId: String = UUID.randomUUID().toString()
     }
@@ -56,7 +56,7 @@ class AnalyticsRepository(
     fun logEvent(name: String, params: Map<String, Any> = emptyMap()) {
         val event = AnalyticsEvent(
             eventName = name,
-            // b) Se inyecta session_id en el map de parámetros
+            // b) Inject session_id into parameter map
             params = params + ("session_id" to sessionId)
         )
         _events.value = _events.value + event

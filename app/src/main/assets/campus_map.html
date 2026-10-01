@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -863,8 +863,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <body>
   <div id="map"></div>
   <div class="map-fab-column">
-    <div class="map-fab-btn" title="Re-centrar Campus" onclick="recenterCampus()">📍</div>
-    <div class="map-fab-btn" id="layerToggleBtn" title="Cambiar a Satelite" onclick="toggleMapLayer()">🛰️</div>
+    <div class="map-fab-btn" title="Recenter Campus" onclick="recenterCampus()">📍</div>
+    <div class="map-fab-btn" id="layerToggleBtn" title="Switch to Satellite" onclick="toggleMapLayer()">🛰️</div>
   </div>
   <script>
 /* @preserve
@@ -917,12 +917,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }).addTo(map);
 
     const buildingsData = [
-      { id: 'ML', name: 'Edificio ML', sub: 'Ingenieria', lat: 4.603079, lng: -74.065267, color: '#2563EB' },
-      { id: 'C', name: 'Edificio C', sub: 'Ciencias', lat: 4.601315, lng: -74.065375, color: '#059669' },
-      { id: 'RGD', name: 'Edificio RGD', sub: 'Deportes', lat: 4.602309, lng: -74.066139, color: '#D97706' },
-      { id: 'Franco', name: 'Edificio Franco', sub: 'Leyes', lat: 4.601692, lng: -74.066185, color: '#E11D48' },
-      { id: 'SD', name: 'Edificio SD', sub: 'Aulas', lat: 4.604165, lng: -74.065798, color: '#7C3AED' },
-      { id: 'W', name: 'Edificio W', sub: 'Diseno', lat: 4.602256, lng: -74.064791, color: '#0284C7' }
+      { id: 'ML', name: 'ML Building', sub: 'Engineering', lat: 4.603079, lng: -74.065267, color: '#2563EB' },
+      { id: 'C', name: 'C Building', sub: 'Sciences', lat: 4.601315, lng: -74.065375, color: '#059669' },
+      { id: 'RGD', name: 'RGD Building', sub: 'Sports', lat: 4.602309, lng: -74.066139, color: '#D97706' },
+      { id: 'Franco', name: 'Franco Building', sub: 'Law', lat: 4.601692, lng: -74.066185, color: '#E11D48' },
+      { id: 'SD', name: 'SD Building', sub: 'Classrooms', lat: 4.604165, lng: -74.065798, color: '#7C3AED' },
+      { id: 'W', name: 'W Building', sub: 'Design', lat: 4.602256, lng: -74.064791, color: '#0284C7' }
     ];
 
     buildingsData.forEach(b => {
@@ -976,7 +976,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div class="popup-card">
           <div class="popup-title">${rest.emoji} ${rest.name}</div>
           <div class="popup-sub">${rest.category}</div>
-          <div class="popup-btn" onclick="onRestaurantClick('${rest.id}')">Ver restaurante</div>
+          <div class="popup-btn" onclick="onRestaurantClick('${rest.id}')">View Restaurant</div>
         </div>
       `;
       marker.bindPopup(popupHtml, { closeButton: false, offset: [0, -42] });
@@ -1035,13 +1035,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
         map.addLayer(satelliteTiles);
         currentLayer = 'satellite';
         btn.innerHTML = '🗺️';
-        btn.title = 'Cambiar a Mapa de Calles';
+        btn.title = 'Switch to Street Map';
       } else {
         map.removeLayer(satelliteTiles);
         map.addLayer(streetTiles);
         currentLayer = 'street';
         btn.innerHTML = '🛰️';
-        btn.title = 'Cambiar a Satélite';
+        btn.title = 'Switch to Satellite';
       }
     };
 

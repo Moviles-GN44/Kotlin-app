@@ -57,10 +57,10 @@ fun RestaurantDetailScreen(
 
     val menuDishes = selectedRestaurant?.menu ?: emptyList()
 
-    // Estado del plato seleccionado
+    // Selected dish state
     var selectedDish by remember { mutableStateOf<MenuItem?>(null) }
 
-    // Diálogo con la foto
+    // Dish photo dialog
     selectedDish?.let { dish ->
         AlertDialog(
             onDismissRequest = { selectedDish = null },
@@ -105,7 +105,7 @@ fun RestaurantDetailScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Regresar",
+                            contentDescription = "Back",
                             tint = ShadowGrey,
                             modifier = Modifier.size(24.dp)
                         )
@@ -117,7 +117,7 @@ fun RestaurantDetailScreen(
                         IconButton(onClick = { viewModel?.toggleFavorite(selectedRestaurant.id) }) {
                             Icon(
                                 imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "Favorito",
+                                contentDescription = "Favorite",
                                 tint = if (isFav) StatusLongRed else ShadowGrey
                             )
                         }
@@ -410,7 +410,7 @@ fun RestaurantDetailScreen(
                     Card(
                         colors = CardDefaults.cardColors(containerColor = CardSurfaceWhite),
                         shape = RoundedCornerShape(12.dp),
-                        // c) Tarjeta clickeable
+                        // Clickable card
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {

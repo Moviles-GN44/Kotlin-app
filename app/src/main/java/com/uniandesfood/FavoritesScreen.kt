@@ -49,7 +49,7 @@ fun FavoritesScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "Restaurantes Favoritos",
+                            text = "Favorite Restaurants",
                             style = MaterialTheme.typography.headlineMedium,
                             color = ShadowGrey
                         )
@@ -114,7 +114,7 @@ fun FavoritesScreen(
                         Spacer(modifier = Modifier.height(18.dp))
 
                         Text(
-                            text = "No tienes favoritos aún",
+                            text = "No favorites yet",
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = ShadowGrey,
                             textAlign = TextAlign.Center
@@ -123,7 +123,7 @@ fun FavoritesScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text = "Toca el corazón en cualquier restaurante en el Mapa o en Explorar para guardarlo aquí y acceder rápidamente.",
+                            text = "Tap the heart on any restaurant in the Map or Explore to save it here for quick access.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextMuted,
                             textAlign = TextAlign.Center,
@@ -139,7 +139,7 @@ fun FavoritesScreen(
                             modifier = Modifier.height(46.dp)
                         ) {
                             Text(
-                                text = "Explorar Campus",
+                                text = "Explore Campus",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = ShadowGrey
                             )
@@ -199,7 +199,7 @@ fun FavoritesScreen(
                                 Spacer(modifier = Modifier.height(4.dp))
 
                                 Text(
-                                    text = "${restaurant.category} • Edificio ${restaurant.buildingTag}",
+                                    text = "${restaurant.category} • ${restaurant.buildingTag} Building",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = TextMuted
                                 )
@@ -268,7 +268,7 @@ fun FavoritesScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Favorite,
-                                    contentDescription = "Eliminar de favoritos",
+                                    contentDescription = "Remove from favorites",
                                     tint = StatusLongRed,
                                     modifier = Modifier.size(24.dp)
                                 )

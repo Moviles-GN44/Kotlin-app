@@ -298,7 +298,7 @@ fun MainAppContainer(
                             restaurantName = r.name,
                             onSubmit = { rating ->
                                 reviewViewModel.submitReview(r.id, rating)
-                                Toast.makeText(context, "¡Gracias por calificar $rating estrellas!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Thank you for rating $rating stars!", Toast.LENGTH_SHORT).show()
                                 scannedRestaurant = null
                                 currentScreen = SCREEN_DETAIL
                             },

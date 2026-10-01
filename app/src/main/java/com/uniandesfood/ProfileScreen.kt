@@ -41,8 +41,8 @@ fun ProfileScreen(
     val totalReviews = restaurants.sumOf { it.reviewCount }
     val currentBuilding = restaurantViewModel?.currentBuilding ?: "ML"
 
-    val userEmail = authState?.user?.email?.ifEmpty { "estudiante@uniandes.edu.co" } ?: "estudiante@uniandes.edu.co"
-    val userName = authState?.user?.displayName?.ifEmpty { "Estudiante Uniandino" } ?: "Estudiante Uniandino"
+    val userEmail = authState?.user?.email?.ifEmpty { "student@uniandes.edu.co" } ?: "student@uniandes.edu.co"
+    val userName = authState?.user?.displayName?.ifEmpty { "Uniandes Student" } ?: "Uniandes Student"
 
     var vegetarianPref by remember { mutableStateOf(false) }
     var veganPref by remember { mutableStateOf(false) }
@@ -53,7 +53,7 @@ fun ProfileScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Mi Perfil",
+                        text = "My Profile",
                         style = MaterialTheme.typography.headlineMedium,
                         color = ShadowGrey
                     )
@@ -131,7 +131,7 @@ fun ProfileScreen(
 
             // Stats Overview
             Text(
-                text = "Actividad en el Campus",
+                text = "Campus Activity",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = ShadowGrey
             )
@@ -164,7 +164,7 @@ fun ProfileScreen(
                             color = ShadowGrey
                         )
                         Text(
-                            text = "Favoritos",
+                            text = "Favorites",
                             style = MaterialTheme.typography.labelSmall,
                             color = TextMuted
                         )
@@ -195,7 +195,7 @@ fun ProfileScreen(
                             color = ShadowGrey
                         )
                         Text(
-                            text = "Reseñas QR",
+                            text = "QR Reviews",
                             style = MaterialTheme.typography.labelSmall,
                             color = TextMuted
                         )
@@ -226,7 +226,7 @@ fun ProfileScreen(
                             color = ShadowGrey
                         )
                         Text(
-                            text = "Edificio Base",
+                            text = "Base Building",
                             style = MaterialTheme.typography.labelSmall,
                             color = TextMuted
                         )
@@ -243,13 +243,13 @@ fun ProfileScreen(
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Text(
-                        text = "Preferencias Dietarias",
+                        text = "Dietary Preferences",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = ShadowGrey
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Selecciona tus preferencias para filtrar restaurantes por defecto.",
+                        text = "Select your default preferences for filtering dining options.",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextMuted
                     )
@@ -260,13 +260,13 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        DietaChip(texto = "Vegetariano", marcado = vegetarianPref) {
+                        DietChip(text = "Vegetarian", isChecked = vegetarianPref) {
                             vegetarianPref = !vegetarianPref
                         }
-                        DietaChip(texto = "Vegano", marcado = veganPref) {
+                        DietChip(text = "Vegan", isChecked = veganPref) {
                             veganPref = !veganPref
                         }
-                        DietaChip(texto = "Sin Gluten", marcado = glutenFreePref) {
+                        DietChip(text = "Gluten-Free", isChecked = glutenFreePref) {
                             glutenFreePref = !glutenFreePref
                         }
                     }
@@ -302,7 +302,7 @@ fun ProfileScreen(
                     }
 
                     Text(
-                        text = "ISIS-3510 Desarrollo de Aplicaciones Móviles\nUniversidad de los Andes • Grupo GN-44\nSubgrupo Android (Jetpack Compose) & Subgrupo Flutter",
+                        text = "ISIS-3510 Mobile Applications Development\nUniversidad de los Andes • Group GN-44\nAndroid (Jetpack Compose) & Flutter Subgroups",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextMuted,
                         lineHeight = 18.sp
@@ -311,7 +311,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(2.dp))
 
                     Text(
-                        text = "Conectado a Firebase Cloud Firestore & Microservicio Analytics Pipeline",
+                        text = "Connected to Firebase Cloud Firestore & Analytics Pipeline Microservice",
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
                         color = StatusFastGreen
                     )
@@ -338,12 +338,12 @@ fun ProfileScreen(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                        contentDescription = "Cerrar sesión",
+                        contentDescription = "Sign Out",
                         tint = StatusLongRed,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "Cerrar Sesión",
+                        text = "Sign Out",
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         color = StatusLongRed
                     )

@@ -208,7 +208,7 @@ fun MapScreen(
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "Buscar en campus Uniandes...",
+                            text = "Search Uniandes campus...",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextMuted
                         )
@@ -224,7 +224,7 @@ fun MapScreen(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_explore),
-                            contentDescription = "Filtros",
+                            contentDescription = "Filters",
                             tint = UniandesAmber,
                             modifier = Modifier
                                 .size(28.dp)
@@ -326,7 +326,7 @@ fun MapScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "${selectedRestaurant.category} • Edificio ${selectedRestaurant.buildingTag}",
+                                    text = "${selectedRestaurant.category} • ${selectedRestaurant.buildingTag} Building",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = TextMuted
                                 )
@@ -371,7 +371,7 @@ fun MapScreen(
                                         modifier = Modifier.size(13.dp)
                                     )
                                     Text(
-                                        text = "$walkMin min desde Edificio $currentBuilding",
+                                        text = "$walkMin min walk from $currentBuilding Building",
                                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                         color = ShadowGrey
                                     )
@@ -418,7 +418,7 @@ fun MapScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Orange CTA Button: "Ver Menú y Detalles"
+                        // Orange CTA Button: "View Menu & Details"
                         Button(
                             onClick = { onViewRestaurant(selectedRestaurant) },
                             modifier = Modifier
@@ -438,7 +438,7 @@ fun MapScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Text(
-                                    text = "Ver Menú y Detalles",
+                                    text = "View Menu & Details",
                                     style = MaterialTheme.typography.labelLarge,
                                     color = ShadowGrey
                                 )
