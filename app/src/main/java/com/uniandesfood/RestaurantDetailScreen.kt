@@ -99,11 +99,15 @@ fun RestaurantDetailScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = onBack,
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Regresar",
-                            tint = ShadowGrey
+                            tint = ShadowGrey,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 },

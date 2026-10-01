@@ -3,6 +3,7 @@ package com.uniandesfood
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,7 +30,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +37,15 @@ import com.uniandesfood.data.model.Restaurant
 import com.uniandesfood.data.model.WaitTimeCategory
 import com.uniandesfood.ui.theme.*
 import com.uniandesfood.viewmodel.RestaurantViewModel
+
+private data class CampusBuildingInfo(
+    val id: String,
+    val name: String,
+    val subtitle: String,
+    val normX: Float,
+    val normY: Float,
+    val accentColor: Color
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,128 +59,216 @@ fun MapScreen(
     val favorites = viewModel?.favorites?.collectAsState()?.value ?: emptySet()
     val currentBuilding = viewModel?.currentBuilding ?: "ML"
 
-    var searchQuery by remember { mutableStateOf("") }
+    // The 6 authenticated Campus Buildings from GPS coordinates
+    val buildings = remember {
+        listOf(
+            CampusBuildingInfo("SD", "Edificio SD", "Salones", 0.46f, 0.26f, Color(0xFF7C3AED)),
+            CampusBuildingInfo("ML", "Edificio ML", "Ingeniería", 0.66f, 0.40f, Color(0xFF2563EB)),
+            CampusBuildingInfo("W", "Edificio W", "Diseño", 0.80f, 0.52f, Color(0xFF0284C7)),
+            CampusBuildingInfo("RGD", "Edificio RGD", "Deportes", 0.42f, 0.52f, Color(0xFFD97706)),
+            CampusBuildingInfo("Franco", "Edificio Franco", "Leyes", 0.42f, 0.64f, Color(0xFFE11D48)),
+            CampusBuildingInfo("C", "Edificio C", "Ciencias", 0.70f, 0.67f, Color(0xFF059669))
+        )
+    }
 
-    // Map positions relative to campus viewport [0f..1f, 0f..1f]
-    // Well distributed within visible canvas bounds
-    val restaurantMapCoords = remember {
+    // Positions for the 7 authenticated restaurants calibrated to campus geometry
+    val restaurantPositions = remember {
         mapOf(
-            "one_burrito_ml" to Pair(0.24f, 0.28f),         // ML Building area
-            "el_toro_rgd" to Pair(0.52f, 0.44f),            // RGD central plaza
-            "one_burrito_rgd" to Pair(0.72f, 0.46f),        // RGD east
-            "burger_play_rgd" to Pair(0.48f, 0.58f),        // RGD south terrace
-            "la_cabra_sanduchera_rgd" to Pair(0.70f, 0.60f),// RGD patio
-            "la_liebre_franco" to Pair(0.68f, 0.25f),       // Franco building
-            "burger_play_sd" to Pair(0.25f, 0.68f)          // SD building
+            "burger_play_sd" to Triple(0.64f, 0.22f, "🍔"),
+            "one_burrito_ml" to Triple(0.74f, 0.33f, "🌯"),
+            "la_cabra_sanduchera_rgd" to Triple(0.18f, 0.42f, "🥪"),
+            "one_burrito_rgd" to Triple(0.14f, 0.48f, "🌯"),
+            "el_toro_rgd" to Triple(0.22f, 0.55f, "🥩"),
+            "burger_play_rgd" to Triple(0.14f, 0.60f, "🍔"),
+            "la_liebre_franco" to Triple(0.20f, 0.67f, "🐇")
         )
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundOffWhite)
+            .background(Color(0xFFF8FAFC))
     ) {
-        // 1. Campus Map Container
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        // 1. Campus Map Canvas & Layout
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val mapWidthDp = maxWidth
             val mapHeightDp = maxHeight
 
-            // Canvas: Roads, Campus Greens, Walkways
+            // Canvas: Ground, Pathways, Plazas, Gardens
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
 
-                // Campus Background Slate
+                // Campus Terrain base
                 drawRect(
-                    color = Color(0xFFF1F5F9),
+                    color = Color(0xFFF8FAFC),
                     size = size
                 )
 
-                // Central Campus Green Zone (Jardines del Bobo / Plazoleta)
+                // Plazoleta Central (connecting ML, RGD, SD)
+                drawRoundRect(
+                    color = Color(0xFFF1F5F9),
+                    topLeft = Offset(w * 0.30f, h * 0.32f),
+                    size = Size(w * 0.48f, h * 0.26f),
+                    cornerRadius = CornerRadius(36f, 36f)
+                )
+
+                // Plazoleta RGD & Food Terrace
+                drawRoundRect(
+                    color = Color(0xFFF1F5F9),
+                    topLeft = Offset(w * 0.08f, h * 0.42f),
+                    size = Size(w * 0.34f, h * 0.24f),
+                    cornerRadius = CornerRadius(28f, 28f)
+                )
+
+                // Central Campus Green (Jardín Central / El Bobo)
                 drawRoundRect(
                     color = Color(0xFFDCFCE7),
-                    topLeft = Offset(w * 0.12f, h * 0.20f),
-                    size = Size(w * 0.76f, h * 0.48f),
+                    topLeft = Offset(w * 0.38f, h * 0.32f),
+                    size = Size(w * 0.24f, h * 0.16f),
                     cornerRadius = CornerRadius(32f, 32f)
                 )
 
-                // Secondary Garden (Bosque Uniandes / C-W Zone)
+                // South Green Zone (Jardines Franco / Bosque)
+                drawRoundRect(
+                    color = Color(0xFFE2F5E9),
+                    topLeft = Offset(w * 0.48f, h * 0.58f),
+                    size = Size(w * 0.18f, h * 0.12f),
+                    cornerRadius = CornerRadius(24f, 24f)
+                )
+
+                // North Lawn (Around SD)
                 drawRoundRect(
                     color = Color(0xFFE8F5E9),
-                    topLeft = Offset(w * 0.15f, h * 0.12f),
-                    size = Size(w * 0.40f, h * 0.12f),
+                    topLeft = Offset(w * 0.34f, h * 0.20f),
+                    size = Size(w * 0.28f, h * 0.08f),
                     cornerRadius = CornerRadius(20f, 20f)
                 )
 
-                // Campus Walkways (Senderos peatonales)
+                // Campus Trees Accent (small lush green circles)
+                drawCircle(color = Color(0xFF86EFAC), radius = 9f, center = Offset(w * 0.43f, h * 0.35f))
+                drawCircle(color = Color(0xFF86EFAC), radius = 11f, center = Offset(w * 0.52f, h * 0.38f))
+                drawCircle(color = Color(0xFF86EFAC), radius = 10f, center = Offset(w * 0.54f, h * 0.63f))
+                drawCircle(color = Color(0xFF86EFAC), radius = 9f, center = Offset(w * 0.58f, h * 0.61f))
+
+                // Paved Walkways connecting all 6 buildings
+                // Pathway: SD -> ML
                 drawLine(
                     color = Color(0xFFE2E8F0),
-                    start = Offset(w * 0.10f, h * 0.26f),
-                    end = Offset(w * 0.88f, h * 0.55f),
+                    start = Offset(w * 0.46f, h * 0.26f),
+                    end = Offset(w * 0.66f, h * 0.40f),
                     strokeWidth = 14f
                 )
+                // Pathway: Central -> RGD
                 drawLine(
                     color = Color(0xFFE2E8F0),
-                    start = Offset(w * 0.28f, h * 0.15f),
-                    end = Offset(w * 0.50f, h * 0.72f),
+                    start = Offset(w * 0.66f, h * 0.40f),
+                    end = Offset(w * 0.42f, h * 0.52f),
+                    strokeWidth = 16f
+                )
+                // Pathway: ML -> W
+                drawLine(
+                    color = Color(0xFFE2E8F0),
+                    start = Offset(w * 0.66f, h * 0.40f),
+                    end = Offset(w * 0.80f, h * 0.52f),
+                    strokeWidth = 14f
+                )
+                // Pathway: RGD -> Franco
+                drawLine(
+                    color = Color(0xFFE2E8F0),
+                    start = Offset(w * 0.42f, h * 0.52f),
+                    end = Offset(w * 0.42f, h * 0.64f),
+                    strokeWidth = 14f
+                )
+                // Pathway: Franco -> Edificio C
+                drawLine(
+                    color = Color(0xFFE2E8F0),
+                    start = Offset(w * 0.42f, h * 0.64f),
+                    end = Offset(w * 0.70f, h * 0.67f),
+                    strokeWidth = 14f
+                )
+                // Pathway: C -> W
+                drawLine(
+                    color = Color(0xFFE2E8F0),
+                    start = Offset(w * 0.70f, h * 0.67f),
+                    end = Offset(w * 0.80f, h * 0.52f),
                     strokeWidth = 12f
                 )
+                // Pathway: RGD -> Food Terrace West
                 drawLine(
                     color = Color(0xFFE2E8F0),
-                    start = Offset(w * 0.70f, h * 0.22f),
-                    end = Offset(w * 0.45f, h * 0.65f),
-                    strokeWidth = 10f
+                    start = Offset(w * 0.42f, h * 0.52f),
+                    end = Offset(w * 0.16f, h * 0.52f),
+                    strokeWidth = 14f
                 )
             }
 
-            // Campus Building Zones Overlay with visible labels
-            val buildingLayout = listOf(
-                Pair(Pair(0.08f, 0.22f), "Edificio ML\n(Ingeniería)"),
-                Pair(Pair(0.42f, 0.38f), "Edificio RGD\n(Centro Deportivo)"),
-                Pair(Pair(0.58f, 0.15f), "Edificio Franco\n(Administración)"),
-                Pair(Pair(0.08f, 0.62f), "Edificio SD\n(Salones)")
-            )
-
-            buildingLayout.forEach { (coord, name) ->
+            // 6 Campus Building Footprint Cards
+            buildings.forEach { bldg ->
+                val isOrigin = bldg.id == currentBuilding
                 Box(
                     modifier = Modifier
                         .offset(
-                            x = mapWidthDp * coord.first,
-                            y = mapHeightDp * coord.second
+                            x = (mapWidthDp * bldg.normX) - 48.dp,
+                            y = (mapHeightDp * bldg.normY) - 18.dp
                         )
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.88f))
-                        .border(1.dp, Color(0xFFCBD5E1), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .shadow(elevation = if (isOrigin) 6.dp else 2.dp, shape = RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White)
+                        .border(
+                            width = if (isOrigin) 2.dp else 1.dp,
+                            color = if (isOrigin) UniandesAmber else Color(0xFFCBD5E1),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .clickable {
+                            viewModel?.updateCurrentBuilding(bldg.id)
+                        }
+                        .padding(horizontal = 7.dp, vertical = 5.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_building),
-                            contentDescription = null,
-                            tint = Color(0xFF64748B),
-                            modifier = Modifier.size(13.dp)
+                        // Colored accent indicator
+                        Box(
+                            modifier = Modifier
+                                .width(3.dp)
+                                .height(22.dp)
+                                .background(bldg.accentColor, RoundedCornerShape(2.dp))
                         )
-                        Text(
-                            text = name,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                lineHeight = 11.sp
-                            ),
-                            color = Color(0xFF475569)
-                        )
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = bldg.name,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    color = Color(0xFF1E293B)
+                                )
+                                if (isOrigin) {
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = "📍",
+                                        fontSize = 9.sp
+                                    )
+                                }
+                            }
+                            Text(
+                                text = bldg.subtitle,
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 8.sp,
+                                    color = Color(0xFF64748B)
+                                )
+                            )
+                        }
                     }
                 }
             }
 
-            // Visible Interactive Restaurant Pins
+            // 7 Interactive Restaurant Pins
             restaurants.forEach { rest ->
-                val coord = restaurantMapCoords[rest.id] ?: Pair(0.5f, 0.5f)
+                val posInfo = restaurantPositions[rest.id] ?: Triple(0.5f, 0.5f, "🍽️")
                 val isSelected = rest.id == selectedRestaurant?.id
                 val shortName = when (rest.id) {
                     "one_burrito_ml" -> "One Burrito (ML)"
@@ -187,32 +284,30 @@ fun MapScreen(
                 Box(
                     modifier = Modifier
                         .offset(
-                            x = (mapWidthDp * coord.first) - 40.dp,
-                            y = (mapHeightDp * coord.second) - 16.dp
+                            x = (mapWidthDp * posInfo.first) - 44.dp,
+                            y = (mapHeightDp * posInfo.second) - 15.dp
                         )
                         .shadow(
                             elevation = if (isSelected) 8.dp else 3.dp,
                             shape = RoundedCornerShape(16.dp)
                         )
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isSelected) UniandesAmber else CardSurfaceWhite)
+                        .background(if (isSelected) UniandesAmber else Color.White)
                         .border(
                             width = if (isSelected) 2.dp else 1.dp,
                             color = if (isSelected) UniandesAmber else Color(0xFFE2E8F0),
                             shape = RoundedCornerShape(16.dp)
                         )
                         .clickable { viewModel?.selectRestaurant(rest.id) }
-                        .padding(horizontal = 7.dp, vertical = 4.dp)
+                        .padding(horizontal = 7.dp, vertical = 5.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = rest.name,
-                            tint = if (isSelected) ShadowGrey else StatusLongRed,
-                            modifier = Modifier.size(15.dp)
+                        Text(
+                            text = posInfo.third,
+                            fontSize = 11.sp
                         )
                         Text(
                             text = shortName,
@@ -263,7 +358,7 @@ fun MapScreen(
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "Buscar restaurante en el campus...",
+                            text = "Buscar en Uniandes Food...",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextMuted
                         )
@@ -304,7 +399,7 @@ fun MapScreen(
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = if (isSelected) UniandesAmber else CardSurfaceWhite.copy(alpha = 0.95f),
-                        border = androidx.compose.foundation.BorderStroke(
+                        border = BorderStroke(
                             1.dp,
                             if (isSelected) UniandesAmber else BorderLight
                         ),
@@ -423,7 +518,7 @@ fun MapScreen(
                                         modifier = Modifier.size(13.dp)
                                     )
                                     Text(
-                                        text = "$walkMin min",
+                                        text = "$walkMin min desde Edificio $currentBuilding",
                                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                         color = ShadowGrey
                                     )

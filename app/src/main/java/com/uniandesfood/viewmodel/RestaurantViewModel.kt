@@ -57,6 +57,10 @@ class RestaurantViewModel(
         _selectedRestaurant.value = filtered.firstOrNull()
     }
 
+    fun updateCurrentBuilding(building: String) {
+        currentBuilding = building
+    }
+
     fun filterByCategory(category: String) {
         currentCriteria = null
         val filtered = restaurantRepository.filterByCategory(category)

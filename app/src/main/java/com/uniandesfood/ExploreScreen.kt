@@ -1,5 +1,6 @@
 package com.uniandesfood
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,6 +34,7 @@ fun ExploreScreen(
 ) {
     var categoriaSeleccionada by remember { mutableStateOf("Todos") }
     var selectedBuilding by remember { mutableStateOf(viewModel?.currentBuilding ?: "ML") }
+    var buildingDropdownExpanded by remember { mutableStateOf(false) }
 
     var tiempoCaminando by remember { mutableStateOf("< 10 min") }
     var presupuesto by remember { mutableStateOf(5000f..25000f) }
@@ -97,20 +99,70 @@ fun ExploreScreen(
 
                 // 1. Reference Campus Building
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_building),
-                        contentDescription = "Edificio",
-                        tint = UniandesAmber,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "Edificio de Origen (Campus)",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = ShadowGrey
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_building),
+                            contentDescription = "Edificio",
+                            tint = UniandesAmber,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Edificio de Origen",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = ShadowGrey
+                        )
+                    }
+
+                    // Interactive Dropdown Button: "From ML ▾"
+                    Box {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = UniandesAmber.copy(alpha = 0.15f),
+                            border = BorderStroke(1.dp, UniandesAmber),
+                            modifier = Modifier.clickable { buildingDropdownExpanded = true }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "From $selectedBuilding ▾",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = ShadowGrey
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = buildingDropdownExpanded,
+                            onDismissRequest = { buildingDropdownExpanded = false }
+                        ) {
+                            campusBuildings.forEach { building ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = "Edificio $building",
+                                            fontWeight = if (selectedBuilding == building) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (selectedBuilding == building) UniandesAmber else ShadowGrey
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedBuilding = building
+                                        viewModel?.updateCurrentBuilding(building)
+                                        buildingDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -137,6 +189,7 @@ fun ExploreScreen(
                                 .background(if (isSelected) UniandesAmber else BackgroundOffWhite)
                                 .clickable {
                                     selectedBuilding = building
+                                    viewModel?.updateCurrentBuilding(building)
                                 }
                                 .padding(horizontal = 16.dp, vertical = 10.dp)
                         ) {
@@ -343,6 +396,7 @@ fun ExploreScreen(
                             isGlutenFreeSelected = sinGluten,
                             selectedPayments = selectedPayments
                         )
+                        viewModel?.updateCurrentBuilding(selectedBuilding)
                         viewModel?.filterRestaurants(criteria)
                         onApplyFilters()
                     },

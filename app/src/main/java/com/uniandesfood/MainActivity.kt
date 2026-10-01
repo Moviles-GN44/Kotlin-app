@@ -3,6 +3,7 @@ package com.uniandesfood
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -105,6 +106,23 @@ fun MainAppContainer(
         if (scannedRestaurant != null) {
             delay(800)
             currentScreen = SCREEN_REVIEW
+        }
+    }
+
+    val navigateBack: () -> Unit = {
+        currentScreen = if (previousTab in listOf(SCREEN_MAP, SCREEN_EXPLORE, SCREEN_FAVORITES, SCREEN_PROFILE)) {
+            previousTab
+        } else {
+            SCREEN_MAP
+        }
+    }
+
+    BackHandler(enabled = currentScreen != SCREEN_MAP) {
+        if (currentScreen in listOf(SCREEN_DETAIL, SCREEN_SCAN_QR, SCREEN_REVIEW)) {
+            navigateBack()
+        } else {
+            currentScreen = SCREEN_MAP
+            previousTab = SCREEN_MAP
         }
     }
 
@@ -246,15 +264,14 @@ fun MainAppContainer(
 
                     SCREEN_DETAIL -> RestaurantDetailScreen(
                         viewModel = restaurantViewModel,
-                        onBack = { currentScreen = previousTab },
+                        onBack = navigateBack,
                         onScanQR = {
-                            previousTab = SCREEN_DETAIL
                             currentScreen = SCREEN_SCAN_QR
                         }
                     )
 
                     SCREEN_SCAN_QR -> ScanQrScreen(
-                        onBack = { currentScreen = previousTab },
+                        onBack = navigateBack,
                         isValidQr = { restaurantViewModel.findById(it) != null },
                         onQrScanned = { value -> scannedRestaurant = restaurantViewModel.findById(value) }
                     )
