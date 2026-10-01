@@ -17,6 +17,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import com.uniandesfood.data.model.MenuItem
 import com.uniandesfood.data.model.Restaurant
 import com.uniandesfood.data.model.WaitTimeCategory
@@ -57,10 +61,33 @@ fun RestaurantDetailScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Campus Dining Options",
+                        text = selectedRestaurant?.name ?: "Campus Dining Options",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = ShadowGrey
+                        color = ShadowGrey,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Regresar",
+                            tint = ShadowGrey
+                        )
+                    }
+                },
+                actions = {
+                    if (selectedRestaurant != null) {
+                        val isFav = viewModel?.favorites?.collectAsState()?.value?.contains(selectedRestaurant.id) == true
+                        IconButton(onClick = { viewModel?.toggleFavorite(selectedRestaurant.id) }) {
+                            Icon(
+                                imageVector = if (isFav) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Favorito",
+                                tint = if (isFav) StatusLongRed else ShadowGrey
+                            )
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = CardSurfaceWhite)
             )

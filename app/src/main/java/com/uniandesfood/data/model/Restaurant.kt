@@ -20,6 +20,8 @@ data class Restaurant(
     val paymentMethods: List<String> = listOf("Nequi", "Daviplata", "Cards", "Cash"),
     val isVeganFriendly: Boolean = true,
     val isGlutenFreeFriendly: Boolean = true,
+    val latitude: Double = 4.6010,
+    val longitude: Double = -74.0660,
     val menu: List<MenuItem> = emptyList()
 ) {
     fun toMap(): Map<String, Any> {
@@ -37,6 +39,8 @@ data class Restaurant(
             "paymentMethods" to paymentMethods,
             "isVeganFriendly" to isVeganFriendly,
             "isGlutenFreeFriendly" to isGlutenFreeFriendly,
+            "latitude" to latitude,
+            "longitude" to longitude,
             "menu" to menu.map { it.toMap() }
         )
     }
@@ -65,6 +69,8 @@ data class Restaurant(
                 paymentMethods = (map["paymentMethods"] as? List<String>) ?: listOf("Nequi", "Daviplata", "Cards", "Cash"),
                 isVeganFriendly = map["isVeganFriendly"] as? Boolean ?: false,
                 isGlutenFreeFriendly = map["isGlutenFreeFriendly"] as? Boolean ?: false,
+                latitude = (map["latitude"] as? Number)?.toDouble() ?: 4.6010,
+                longitude = (map["longitude"] as? Number)?.toDouble() ?: -74.0660,
                 menu = menuList
             )
         }

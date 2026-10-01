@@ -25,6 +25,9 @@ class RestaurantViewModel(
     private val _selectedRestaurant = MutableStateFlow<Restaurant?>(restaurantRepository.getAllRestaurants().firstOrNull())
     val selectedRestaurant: StateFlow<Restaurant?> = _selectedRestaurant.asStateFlow()
 
+    private val _favorites = MutableStateFlow<Set<String>>(setOf("el_toro_rgd", "one_burrito_ml"))
+    val favorites: StateFlow<Set<String>> = _favorites.asStateFlow()
+
     var currentBuilding by mutableStateOf("ML")
         private set
 
@@ -64,6 +67,18 @@ class RestaurantViewModel(
         val found = restaurantRepository.getRestaurantById(restaurantId)
         _selectedRestaurant.value = found
     }
+
+    fun toggleFavorite(restaurantId: String) {
+        val current = _favorites.value.toMutableSet()
+        if (current.contains(restaurantId)) {
+            current.remove(restaurantId)
+        } else {
+            current.add(restaurantId)
+        }
+        _favorites.value = current
+    }
+
+    fun isFavorite(restaurantId: String): Boolean = _favorites.value.contains(restaurantId)
 
     fun findById(id: String): Restaurant? =
         restaurantRepository.getAllRestaurants().find { it.id == id.trim() }
