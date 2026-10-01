@@ -42,9 +42,9 @@ fun RestaurantDetailScreen(
     val ratingValue = selectedRestaurant?.rating ?: 0.0
 
     val ratingText = if (reviewCount == 0) {
-        "N/A ★ (No reviews yet)"
+        "N/A ★ (0 reviews)"
     } else {
-        "$ratingValue ★ ($reviewCount verified student reviews)"
+        "$ratingValue ★ ($reviewCount ${if (reviewCount == 1) "review" else "reviews"})"
     }
 
     val walkTimeText = "$walkMinutes min walk from $currentBuilding Building"
@@ -132,7 +132,7 @@ fun RestaurantDetailScreen(
                             items(allMatchingRestaurants) { restaurant ->
                                 val isSelected = restaurant.id == selectedRestaurant?.id
                                 val walkMin = restaurant.walkDistancesFromBuilding[currentBuilding] ?: 2
-                                val cardRatingText = if (restaurant.reviewCount == 0) "N/A ★" else "${restaurant.rating} ★"
+                                val cardRatingText = if (restaurant.reviewCount == 0) "N/A ★ (0)" else "${restaurant.rating} ★ (${restaurant.reviewCount})"
                                 Card(
                                     colors = CardDefaults.cardColors(
                                         containerColor = if (isSelected) UniandesAmber.copy(alpha = 0.15f) else CardSurfaceWhite
