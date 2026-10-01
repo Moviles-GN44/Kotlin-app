@@ -14,6 +14,15 @@ import kotlinx.coroutines.tasks.await
 class RestaurantRepository(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
+    private val allowedRestaurantIds = setOf(
+        "el_toro_rgd",
+        "one_burrito_ml",
+        "one_burrito_rgd",
+        "burger_play_rgd",
+        "burger_play_sd",
+        "la_cabra_sanduchera_rgd",
+        "la_liebre_franco"
+    )
 
     private val sampleRestaurants = listOf(
         Restaurant(
@@ -227,7 +236,7 @@ class RestaurantRepository(
             waitTimeCategory = WaitTimeCategory.FAST,
             waitTimeLabel = "< 5 MIN WAIT",
             rating = 0.0,
-            reviewCount = 0,
+             reviewCount = 0,
             averagePriceCOP = 25000,
             paymentMethods = listOf("Nequi", "Cards", "Cash"),
             isVeganFriendly = true,
@@ -327,7 +336,7 @@ class RestaurantRepository(
                     if (snapshot != null && !snapshot.isEmpty) {
                         val list = snapshot.documents.mapNotNull { doc ->
                             doc.data?.let { Restaurant.fromMap(it) }
-                        }
+                        }.filter { it.id in allowedRestaurantIds }
                         if (list.isNotEmpty()) {
                             _restaurantsFlow.value = list
                         }
