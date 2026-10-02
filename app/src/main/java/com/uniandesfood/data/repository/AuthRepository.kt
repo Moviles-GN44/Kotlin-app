@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 import java.util.regex.Pattern
+import android.util.Log
 
 class AuthRepository(
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance(),
@@ -109,6 +110,23 @@ class AuthRepository(
             Result.failure(e)
         }
     }
+
+    suspend fun resetPassword(email: String): Result<Unit> {
+    val emailError = validateEmail(email)
+    if (emailError != null) return Result.failure(IllegalArgumentException(emailError))
+    
+    val cleanEmail = email.trim().lowercase()
+    Log.d("ResetPwd", "Enviando solicitud para: $cleanEmail")
+
+    return try {
+        firebaseAuth.sendPasswordResetEmail(cleanEmail).await()
+        Log.d("ResetPwd", "Firebase reportó envío EXITOSO")
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Log.e("ResetPwd", "Error de Firebase al restablecer: ${e.message}", e)
+        Result.failure(e)
+    }
+}
 
     fun logout() {
         firebaseAuth.signOut()

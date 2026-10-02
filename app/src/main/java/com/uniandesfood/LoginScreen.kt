@@ -257,6 +257,23 @@ fun LoginScreen(
                         }
                     }
 
+                    if (!uiState.isRegistering) {
+                        TextButton(
+                            onClick = {
+                                focusManager.clearFocus()
+                                viewModel?.forgotPassword()
+                            },
+                            enabled = !uiState.isLoading,
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Text(
+                                text = "Forgot password?",
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                color = UniandesAmber
+                            )
+                        }
+                    }
+
                     // General Error Banner if any
                     if (uiState.generalError != null) {
                         Surface(
@@ -267,6 +284,21 @@ fun LoginScreen(
                             Text(
                                 text = uiState.generalError ?: "",
                                 color = StatusLongRed,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(10.dp)
+                            )
+                        }
+                    }
+
+                    if (uiState.infoMessage != null) {
+                        Surface(
+                            color = UniandesAmber.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = uiState.infoMessage ?: "",
+                                color = ShadowGrey,
                                 style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.padding(10.dp)
                             )
