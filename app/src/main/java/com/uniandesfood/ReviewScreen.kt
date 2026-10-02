@@ -14,19 +14,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.uniandesfood.ui.theme.*
 
+private const val MAX_COMMENT_LENGTH = 280
+
 @Composable
 fun ReviewScreen(
     restaurantName: String,
-    onSubmit: (Int) -> Unit,
+    onSubmit: (Int, String) -> Unit,
     onCancel: () -> Unit
 ) {
     var rating by remember { mutableIntStateOf(0) }
+    var comment by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
+            .imePadding()
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -57,10 +61,22 @@ fun ReviewScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = comment,
+            onValueChange = { if (it.length <= MAX_COMMENT_LENGTH) comment = it },
+            label = { Text("Comment (optional)") },
+            supportingText = { Text("${comment.length}/$MAX_COMMENT_LENGTH") },
+            minLines = 3,
+            maxLines = 5,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = { onSubmit(rating) },
+            onClick = { onSubmit(rating, comment) },
             enabled = rating > 0,
             colors = ButtonDefaults.buttonColors(containerColor = UniandesAmber),
             modifier = Modifier
@@ -79,6 +95,6 @@ fun ReviewScreen(
 @Composable
 fun ReviewScreenPreview() {
     UniandesFoodTheme {
-        ReviewScreen(restaurantName = "One Burrito - ML", onSubmit = {}, onCancel = {})
+        ReviewScreen(restaurantName = "One Burrito - ML", onSubmit = { _, _ -> }, onCancel = {})
     }
 }

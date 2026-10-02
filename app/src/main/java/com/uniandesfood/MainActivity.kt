@@ -102,6 +102,8 @@ fun MainAppContainer(
     var currentScreen by remember { mutableIntStateOf(SCREEN_MAP) }
     var previousTab by remember { mutableIntStateOf(SCREEN_MAP) }
     val reviewViewModel: ReviewViewModel = viewModel()
+    val authState by authViewModel.uiState.collectAsState()
+    val currentUid = authState.user?.uid.orEmpty()
     val context = LocalContext.current
     var scannedRestaurant by remember { mutableStateOf<Restaurant?>(null) }
 
@@ -296,8 +298,8 @@ fun MainAppContainer(
                     SCREEN_REVIEW -> scannedRestaurant?.let { r ->
                         ReviewScreen(
                             restaurantName = r.name,
-                            onSubmit = { rating ->
-                                reviewViewModel.submitReview(r.id, rating)
+                            onSubmit = { rating, comment ->
+                                reviewViewModel.submitReview(r.id, rating, comment, uid = currentUid)
                                 Toast.makeText(context, "Thank you for rating $rating stars!", Toast.LENGTH_SHORT).show()
                                 scannedRestaurant = null
                                 currentScreen = SCREEN_DETAIL
