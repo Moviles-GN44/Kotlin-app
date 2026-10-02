@@ -32,16 +32,16 @@ fun ExploreScreen(
     viewModel: RestaurantViewModel? = null,
     onApplyFilters: () -> Unit = {}
 ) {
-    var categoriaSeleccionada by remember { mutableStateOf("Todos") }
+    var selectedCategory by remember { mutableStateOf("All") }
     var selectedBuilding by remember { mutableStateOf(viewModel?.currentBuilding ?: "ML") }
     var buildingDropdownExpanded by remember { mutableStateOf(false) }
 
-    var tiempoCaminando by remember { mutableStateOf("< 10 min") }
-    var presupuesto by remember { mutableStateOf(5000f..25000f) }
+    var walkingTime by remember { mutableStateOf("< 10 min") }
+    var budgetRange by remember { mutableStateOf(5000f..25000f) }
 
-    var vegetariano by remember { mutableStateOf(false) }
-    var vegano by remember { mutableStateOf(false) }
-    var sinGluten by remember { mutableStateOf(false) }
+    var isVegetarian by remember { mutableStateOf(false) }
+    var isVegan by remember { mutableStateOf(false) }
+    var isGlutenFree by remember { mutableStateOf(false) }
 
     var selectedPayments by remember { mutableStateOf(setOf("Nequi", "Cards", "Cash")) }
 
@@ -57,7 +57,7 @@ fun ExploreScreen(
     ) {
 
         Text(
-            text = "Filtros",
+            text = "Filters",
             style = MaterialTheme.typography.headlineLarge,
             color = ShadowGrey
         )
@@ -71,16 +71,16 @@ fun ExploreScreen(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            listOf("Todos", "Executive Lunch", "Fast Food", "Healthy", "Desserts", "Café").forEach { categoria ->
-                CategoriaChip(
-                    texto = categoria,
-                    seleccionado = categoriaSeleccionada == categoria,
+            listOf("All", "Executive Lunch", "Fast Food").forEach { category ->
+                CategoryChip(
+                    text = category,
+                    isSelected = selectedCategory == category,
                     onClick = {
-                        categoriaSeleccionada = categoria
-                        if (categoria == "Todos") {
+                        selectedCategory = category
+                        if (category == "All") {
                             viewModel?.filterByCategory("")
                         } else {
-                            viewModel?.filterByCategory(categoria)
+                            viewModel?.filterByCategory(category)
                         }
                     }
                 )
@@ -109,12 +109,12 @@ fun ExploreScreen(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_building),
-                            contentDescription = "Edificio",
+                            contentDescription = "Building",
                             tint = UniandesAmber,
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "Edificio de Origen",
+                            text = "Origin Building",
                             style = MaterialTheme.typography.titleMedium,
                             color = ShadowGrey
                         )
@@ -149,7 +149,7 @@ fun ExploreScreen(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            text = "Edificio $building",
+                                            text = "$building Building",
                                             fontWeight = if (selectedBuilding == building) FontWeight.Bold else FontWeight.Normal,
                                             color = if (selectedBuilding == building) UniandesAmber else ShadowGrey
                                         )
@@ -168,7 +168,7 @@ fun ExploreScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Calcula la distancia caminando según donde estés:",
+                    text = "Calculate walking distance from where you are:",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextMuted
                 )
@@ -194,7 +194,7 @@ fun ExploreScreen(
                                 .padding(horizontal = 16.dp, vertical = 10.dp)
                         ) {
                             Text(
-                                text = "Edificio $building",
+                                text = "$building Building",
                                 color = if (isSelected) ShadowGrey else TextPrimary,
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
                             )
@@ -211,12 +211,12 @@ fun ExploreScreen(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_walk_time),
-                        contentDescription = "Tiempo",
+                        contentDescription = "Time",
                         tint = UniandesAmber,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "Tiempo Máximo Caminando",
+                        text = "Max Walking Time",
                         style = MaterialTheme.typography.titleMedium,
                         color = ShadowGrey
                     )
@@ -230,11 +230,11 @@ fun ExploreScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("< 5 min", "< 10 min", "< 15 min", "< 20 min").forEach { tiempo ->
-                        TiempoChip(
-                            texto = tiempo,
-                            seleccionado = tiempoCaminando == tiempo,
-                            onClick = { tiempoCaminando = tiempo }
+                    listOf("< 5 min", "< 10 min", "< 15 min", "< 20 min").forEach { time ->
+                        WalkTimeChip(
+                            text = time,
+                            isSelected = walkingTime == time,
+                            onClick = { walkingTime = time }
                         )
                     }
                 }
@@ -253,18 +253,18 @@ fun ExploreScreen(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_price),
-                            contentDescription = "Presupuesto",
+                            contentDescription = "Budget",
                             tint = UniandesAmber,
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "Presupuesto",
+                            text = "Budget",
                             style = MaterialTheme.typography.titleMedium,
                             color = ShadowGrey
                         )
                     }
                     Text(
-                        text = "$${presupuesto.start.toInt().formatCop()} - $${presupuesto.endInclusive.toInt().formatCop()} COP",
+                        text = "$${budgetRange.start.toInt().formatCop()} - $${budgetRange.endInclusive.toInt().formatCop()} COP",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = UniandesAmber
                     )
@@ -273,8 +273,8 @@ fun ExploreScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 RangeSlider(
-                    value = presupuesto,
-                    onValueChange = { presupuesto = it },
+                    value = budgetRange,
+                    onValueChange = { budgetRange = it },
                     valueRange = 5000f..35000f,
                     steps = 5,
                     colors = SliderDefaults.colors(
@@ -294,12 +294,12 @@ fun ExploreScreen(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_vegan),
-                        contentDescription = "Dietario",
+                        contentDescription = "Dietary",
                         tint = StatusFastGreen,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "Restricciones Dietarias",
+                        text = "Dietary Restrictions",
                         style = MaterialTheme.typography.titleMedium,
                         color = ShadowGrey
                     )
@@ -313,14 +313,14 @@ fun ExploreScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    DietaChip(texto = "Vegetariano", marcado = vegetariano) {
-                        vegetariano = !vegetariano
+                    DietChip(text = "Vegetarian", isChecked = isVegetarian) {
+                        isVegetarian = !isVegetarian
                     }
-                    DietaChip(texto = "Vegano", marcado = vegano) {
-                        vegano = !vegano
+                    DietChip(text = "Vegan", isChecked = isVegan) {
+                        isVegan = !isVegan
                     }
-                    DietaChip(texto = "Sin Gluten", marcado = sinGluten) {
-                        sinGluten = !sinGluten
+                    DietChip(text = "Gluten-Free", isChecked = isGlutenFree) {
+                        isGlutenFree = !isGlutenFree
                     }
                 }
 
@@ -333,12 +333,12 @@ fun ExploreScreen(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_payment),
-                        contentDescription = "Pago",
+                        contentDescription = "Payment",
                         tint = UniandesAmber,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "Métodos de Pago (Multi-Selección)",
+                        text = "Payment Methods (Multi-Select)",
                         style = MaterialTheme.typography.titleMedium,
                         color = ShadowGrey
                     )
@@ -352,17 +352,17 @@ fun ExploreScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("Cash", "Cards", "Nequi", "Daviplata").forEach { metodo ->
-                        val isSelected = selectedPayments.contains(metodo)
-                        PagoChip(
-                            texto = metodo,
-                            seleccionado = isSelected,
+                    listOf("Cash", "Cards", "Nequi", "Daviplata").forEach { method ->
+                        val isSelected = selectedPayments.contains(method)
+                        PaymentChip(
+                            text = method,
+                            isSelected = isSelected,
                             onClick = {
                                 val current = selectedPayments.toMutableSet()
                                 if (isSelected) {
-                                    if (current.size > 1) current.remove(metodo)
+                                    if (current.size > 1) current.remove(method)
                                 } else {
-                                    current.add(metodo)
+                                    current.add(method)
                                 }
                                 selectedPayments = current
                             }
@@ -374,15 +374,15 @@ fun ExploreScreen(
 
                 Button(
                     onClick = {
-                        val maxWalk = when (tiempoCaminando) {
+                        val maxWalk = when (walkingTime) {
                             "< 5 min" -> 5f
                             "< 10 min" -> 10f
                             "< 15 min" -> 15f
                             else -> 20f
                         }
-                        val budgetRange = if (presupuesto.endInclusive <= 15000f) {
+                        val budget = if (budgetRange.endInclusive <= 15000f) {
                             BudgetRange.CHEAP
-                        } else if (presupuesto.endInclusive <= 25000f) {
+                        } else if (budgetRange.endInclusive <= 25000f) {
                             BudgetRange.MEDIUM
                         } else {
                             BudgetRange.HIGH
@@ -391,9 +391,9 @@ fun ExploreScreen(
                         val criteria = FilterCriteria(
                             selectedBuilding = selectedBuilding,
                             maxWalkTimeMinutes = maxWalk,
-                            selectedBudget = budgetRange,
-                            isVeganSelected = vegano || vegetariano,
-                            isGlutenFreeSelected = sinGluten,
+                            selectedBudget = budget,
+                            isVeganSelected = isVegan || isVegetarian,
+                            isGlutenFreeSelected = isGlutenFree,
                             selectedPayments = selectedPayments
                         )
                         viewModel?.updateCurrentBuilding(selectedBuilding)
@@ -407,7 +407,7 @@ fun ExploreScreen(
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Text(
-                        text = "Aplicar Filtros",
+                        text = "Apply Filters",
                         style = MaterialTheme.typography.labelLarge,
                         color = ShadowGrey
                     )
@@ -424,22 +424,22 @@ private fun Int.formatCop(): String {
 }
 
 @Composable
-fun CategoriaChip(texto: String, seleccionado: Boolean, onClick: () -> Unit) {
+fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (seleccionado) UniandesAmber else CardSurfaceWhite)
+            .background(if (isSelected) UniandesAmber else CardSurfaceWhite)
             .border(
                 width = 1.dp,
-                color = if (seleccionado) UniandesAmber else BorderLight,
+                color = if (isSelected) UniandesAmber else BorderLight,
                 shape = RoundedCornerShape(50)
             )
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 10.dp)
     ) {
         Text(
-            text = texto,
-            color = if (seleccionado) ShadowGrey else TextMuted,
+            text = text,
+            color = if (isSelected) ShadowGrey else TextMuted,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
             maxLines = 1,
             softWrap = false
@@ -448,22 +448,22 @@ fun CategoriaChip(texto: String, seleccionado: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun TiempoChip(texto: String, seleccionado: Boolean, onClick: () -> Unit) {
+fun WalkTimeChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (seleccionado) CardSurfaceWhite else BackgroundOffWhite)
+            .background(if (isSelected) CardSurfaceWhite else BackgroundOffWhite)
             .border(
-                width = if (seleccionado) 1.5.dp else 0.dp,
-                color = if (seleccionado) UniandesAmber else BorderLight,
+                width = if (isSelected) 1.5.dp else 0.dp,
+                color = if (isSelected) UniandesAmber else BorderLight,
                 shape = RoundedCornerShape(12.dp)
             )
             .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
         Text(
-            text = texto,
-            color = if (seleccionado) UniandesAmber else TextMuted,
+            text = text,
+            color = if (isSelected) UniandesAmber else TextMuted,
             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
             maxLines = 1,
             softWrap = false
@@ -472,21 +472,21 @@ fun TiempoChip(texto: String, seleccionado: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun DietaChip(texto: String, marcado: Boolean, onClick: () -> Unit) {
+fun DietChip(text: String, isChecked: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(10.dp))
-            .background(if (marcado) StatusFastGreen else CardSurfaceWhite)
+            .background(if (isChecked) StatusFastGreen else CardSurfaceWhite)
             .border(
                 width = 1.dp,
-                color = if (marcado) StatusFastGreen else BorderLight,
+                color = if (isChecked) StatusFastGreen else BorderLight,
                 shape = RoundedCornerShape(10.dp)
             )
             .clickable { onClick() }
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (marcado) {
+            if (isChecked) {
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = null,
@@ -496,8 +496,8 @@ fun DietaChip(texto: String, marcado: Boolean, onClick: () -> Unit) {
                 Spacer(modifier = Modifier.width(4.dp))
             }
             Text(
-                text = texto,
-                color = if (marcado) CardSurfaceWhite else TextPrimary,
+                text = text,
+                color = if (isChecked) CardSurfaceWhite else TextPrimary,
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
                 softWrap = false
@@ -507,22 +507,22 @@ fun DietaChip(texto: String, marcado: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun PagoChip(texto: String, seleccionado: Boolean, onClick: () -> Unit) {
+fun PaymentChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(10.dp))
-            .background(if (seleccionado) UniandesAmber.copy(alpha = 0.15f) else BackgroundOffWhite)
+            .background(if (isSelected) UniandesAmber.copy(alpha = 0.15f) else BackgroundOffWhite)
             .border(
                 width = 1.dp,
-                color = if (seleccionado) UniandesAmber else BorderLight,
+                color = if (isSelected) UniandesAmber else BorderLight,
                 shape = RoundedCornerShape(10.dp)
             )
             .clickable { onClick() }
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
         Text(
-            text = texto,
-            color = if (seleccionado) UniandesAmber else TextPrimary,
+            text = text,
+            color = if (isSelected) UniandesAmber else TextPrimary,
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
             softWrap = false

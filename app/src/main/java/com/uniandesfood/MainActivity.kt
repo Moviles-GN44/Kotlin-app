@@ -8,7 +8,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -19,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -131,84 +134,98 @@ fun MainAppContainer(
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                Surface(
-                    color = CardSurfaceWhite,
-                    shadowElevation = 12.dp,
-                    modifier = Modifier.fillMaxWidth()
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding(),
+                    contentAlignment = Alignment.BottomCenter
                 ) {
-                    Row(
+                    // 1. Navigation Surface Bar
+                    Surface(
+                        color = CardSurfaceWhite,
+                        shadowElevation = 12.dp,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .height(68.dp)
-                            .padding(horizontal = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceAround,
-                        verticalAlignment = Alignment.CenterVertically
+                            .height(64.dp)
                     ) {
-                        // 1. Map Tab
-                        BottomNavItem(
-                            label = "Map",
-                            selected = currentScreen == SCREEN_MAP,
-                            iconRes = if (currentScreen == SCREEN_MAP) R.drawable.ic_map_filled else R.drawable.ic_map,
-                            onClick = {
-                                currentScreen = SCREEN_MAP
-                                previousTab = SCREEN_MAP
-                            }
-                        )
-
-                        // 2. Explore Tab
-                        BottomNavItem(
-                            label = "Explore",
-                            selected = currentScreen == SCREEN_EXPLORE,
-                            iconRes = if (currentScreen == SCREEN_EXPLORE) R.drawable.ic_explore_filled else R.drawable.ic_explore,
-                            onClick = {
-                                currentScreen = SCREEN_EXPLORE
-                                previousTab = SCREEN_EXPLORE
-                            }
-                        )
-
-                        // 3. Center Elevated Action Button: Scan QR
-                        Box(
+                        Row(
                             modifier = Modifier
-                                .offset(y = (-10).dp)
-                                .size(56.dp)
-                                .shadow(elevation = 6.dp, shape = CircleShape)
-                                .clip(CircleShape)
-                                .background(UniandesAmber)
-                                .clickable {
-                                    previousTab = currentScreen
-                                    currentScreen = SCREEN_SCAN_QR
-                                },
-                            contentAlignment = Alignment.Center
+                                .fillMaxWidth()
+                                .height(64.dp)
+                                .padding(horizontal = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceAround,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_qr_scan),
-                                contentDescription = "Scan QR",
-                                tint = ShadowGrey,
-                                modifier = Modifier.size(28.dp)
+                            // 1. Map Tab
+                            BottomNavItem(
+                                label = "Map",
+                                selected = currentScreen == SCREEN_MAP,
+                                iconRes = if (currentScreen == SCREEN_MAP) R.drawable.ic_map_filled else R.drawable.ic_map,
+                                onClick = {
+                                    currentScreen = SCREEN_MAP
+                                    previousTab = SCREEN_MAP
+                                }
+                            )
+
+                            // 2. Explore Tab
+                            BottomNavItem(
+                                label = "Explore",
+                                selected = currentScreen == SCREEN_EXPLORE,
+                                iconRes = if (currentScreen == SCREEN_EXPLORE) R.drawable.ic_explore_filled else R.drawable.ic_explore,
+                                onClick = {
+                                    currentScreen = SCREEN_EXPLORE
+                                    previousTab = SCREEN_EXPLORE
+                                }
+                            )
+
+                            // Gap for center floating action button
+                            Spacer(modifier = Modifier.width(64.dp))
+
+                            // 4. Favorites Tab
+                            BottomNavItem(
+                                label = "Favorites",
+                                selected = currentScreen == SCREEN_FAVORITES,
+                                iconRes = if (currentScreen == SCREEN_FAVORITES) R.drawable.ic_favorites_filled else R.drawable.ic_favorites,
+                                onClick = {
+                                    currentScreen = SCREEN_FAVORITES
+                                    previousTab = SCREEN_FAVORITES
+                                }
+                            )
+
+                            // 5. Profile Tab
+                            BottomNavItem(
+                                label = "Profile",
+                                selected = currentScreen == SCREEN_PROFILE,
+                                iconRes = if (currentScreen == SCREEN_PROFILE) R.drawable.ic_profile_filled else R.drawable.ic_profile,
+                                onClick = {
+                                    currentScreen = SCREEN_PROFILE
+                                    previousTab = SCREEN_PROFILE
+                                }
                             )
                         }
+                    }
 
-                        // 4. Favorites Tab
-                        BottomNavItem(
-                            label = "Favorites",
-                            selected = currentScreen == SCREEN_FAVORITES,
-                            iconRes = if (currentScreen == SCREEN_FAVORITES) R.drawable.ic_favorites_filled else R.drawable.ic_favorites,
-                            onClick = {
-                                currentScreen = SCREEN_FAVORITES
-                                previousTab = SCREEN_FAVORITES
-                            }
-                        )
-
-                        // 5. Profile Tab
-                        BottomNavItem(
-                            label = "Profile",
-                            selected = currentScreen == SCREEN_PROFILE,
-                            iconRes = if (currentScreen == SCREEN_PROFILE) R.drawable.ic_profile_filled else R.drawable.ic_profile,
-                            onClick = {
-                                currentScreen = SCREEN_PROFILE
-                                previousTab = SCREEN_PROFILE
-                            }
+                    // 2. Center Floating Action Button: Scan QR (True Perfect Circle overflowing the bar)
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .offset(y = (-18).dp)
+                            .size(60.dp)
+                            .shadow(elevation = 10.dp, shape = CircleShape)
+                            .clip(CircleShape)
+                            .background(UniandesAmber)
+                            .border(BorderStroke(2.5.dp, Color.White), CircleShape)
+                            .clickable {
+                                previousTab = currentScreen
+                                currentScreen = SCREEN_SCAN_QR
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_qr_scan),
+                            contentDescription = "Scan QR",
+                            tint = ShadowGrey,
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
@@ -281,7 +298,7 @@ fun MainAppContainer(
                             restaurantName = r.name,
                             onSubmit = { rating ->
                                 reviewViewModel.submitReview(r.id, rating)
-                                Toast.makeText(context, "¡Gracias por calificar $rating estrellas!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Thank you for rating $rating stars!", Toast.LENGTH_SHORT).show()
                                 scannedRestaurant = null
                                 currentScreen = SCREEN_DETAIL
                             },
