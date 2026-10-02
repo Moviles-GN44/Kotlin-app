@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -22,10 +23,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.lifecycle.viewmodel.compose.viewModel as composeViewModel
 import com.uniandesfood.data.model.MenuItem
 import com.uniandesfood.data.model.Restaurant
 import com.uniandesfood.data.model.WaitTimeCategory
 import com.uniandesfood.ui.theme.*
+import com.uniandesfood.viewmodel.PopularDishesViewModel
 import com.uniandesfood.viewmodel.RestaurantViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,7 +36,9 @@ import com.uniandesfood.viewmodel.RestaurantViewModel
 fun RestaurantDetailScreen(
     viewModel: RestaurantViewModel? = null,
     onBack: () -> Unit = {},
-    onScanQR: () -> Unit = {}
+    onScanQR: () -> Unit = {},
+    popularViewModel: PopularDishesViewModel? =
+        if (LocalInspectionMode.current) null else composeViewModel()
 ) {
     val allMatchingRestaurants = viewModel?.restaurants?.collectAsState()?.value ?: emptyList()
     val selectedRestaurant = viewModel?.selectedRestaurant?.collectAsState()?.value
@@ -56,6 +61,11 @@ fun RestaurantDetailScreen(
     val paymentsText = "Accepts: ${(selectedRestaurant?.paymentMethods ?: listOf("Nequi", "Daviplata", "Cards", "Cash")).joinToString(", ")}"
 
     val menuDishes = selectedRestaurant?.menu ?: emptyList()
+
+    val popularDishIds = popularViewModel?.popularDishIds?.collectAsState()?.value ?: emptySet()
+    LaunchedEffect(selectedRestaurant?.id) {
+        selectedRestaurant?.id?.let { popularViewModel?.loadPopularDishes(it) }
+    }
 
     // Selected dish state
     var selectedDish by remember { mutableStateOf<MenuItem?>(null) }
@@ -407,6 +417,8 @@ fun RestaurantDetailScreen(
 
                 // Menu List
                 items(menuDishes) { dish ->
+                    val isPopular = popularDishIds.contains(dish.id)
+
                     Card(
                         colors = CardDefaults.cardColors(containerColor = CardSurfaceWhite),
                         shape = RoundedCornerShape(12.dp),
@@ -436,6 +448,21 @@ fun RestaurantDetailScreen(
                                     color = ShadowGrey
                                 )
 
+                                if (isPopular) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Surface(
+                                        color = UniandesAmber.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(4.dp)
+                                    ) {
+                                        Text(
+                                            text = "POPULAR",
+                                            color = UniandesAmber,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+
                                 // Clean Dietary Badges Row with vector icons
                                 if (dish.isVegan || dish.isGlutenFree) {
                                     Spacer(modifier = Modifier.height(6.dp))
@@ -444,7 +471,7 @@ fun RestaurantDetailScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         if (dish.isVegan) {
-                                             Surface(
+                                            Surface(
                                                 color = MintEmerald.copy(alpha = 0.15f),
                                                 shape = RoundedCornerShape(4.dp)
                                             ) {
