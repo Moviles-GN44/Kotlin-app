@@ -1,8 +1,10 @@
 package com.uniandesfood.data.repository
 
+import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.uniandesfood.data.model.*
+import com.uniandesfood.data.model.Review
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -375,6 +377,17 @@ class RestaurantRepository(
             batch.commit().await()
         } catch (_: Exception) {
             // Non-fatal if offline
+        }
+    }
+
+    fun saveReview(review: Review) {
+        try {
+            firestore.collection("reviews")
+                .document(review.id)
+                .set(review.toMap())
+                .addOnFailureListener { Log.w("RestaurantRepository", "Could not save review", it) }
+        } catch (_: Exception) {
+            // Do not crash the app if the write fails
         }
     }
 
