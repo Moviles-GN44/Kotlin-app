@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.camera.core)
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     //Camara
     implementation(libs.androidx.camera.camera2)
