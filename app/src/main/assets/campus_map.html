@@ -842,20 +842,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     .popup-sub {
       font-size: 11px;
       color: #64748b;
-      margin-bottom: 8px;
-    }
-    .popup-btn {
-      display: block;
-      width: 100%;
-      text-align: center;
-      background: #F59E0B;
-      color: #0F172A;
-      font-weight: 700;
-      font-size: 11px;
-      padding: 6px 0;
-      border-radius: 8px;
-      text-decoration: none;
-      cursor: pointer;
+      margin-bottom: 0px;
     }
 
   </style>
@@ -947,7 +934,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       { id: 'burger_play_rgd', name: 'Burger Play - RGD', category: 'Hamburguesas', emoji: '🍔', lat: 4.602543, lng: -74.066759 },
       { id: 'burger_play_sd', name: 'Burger Play - SD', category: 'Hamburguesas', emoji: '🍔', lat: 4.604637, lng: -74.065475 },
       { id: 'la_cabra_sanduchera_rgd', name: 'La Cabra Sanduchera', category: 'Sandwiches Artesanales', emoji: '🥪', lat: 4.602546, lng: -74.066644 },
-      { id: 'la_liebre_franco', name: 'La Liebre - Franco', category: 'Cafe & Bakery', emoji: '🐇', lat: 4.601486, lng: -74.066630 }
+      { id: 'la_liebre_franco', name: 'La Liebre - Franco', category: 'Comida Rápida (Hamburguesas)', emoji: '🍔', lat: 4.601486, lng: -74.066630 }
     ];
 
     const restaurantMarkers = {};
@@ -976,7 +963,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
         <div class="popup-card">
           <div class="popup-title">${rest.emoji} ${rest.name}</div>
           <div class="popup-sub">${rest.category}</div>
-          <div class="popup-btn" onclick="onRestaurantClick('${rest.id}')">View Restaurant</div>
         </div>
       `;
       marker.bindPopup(popupHtml, { closeButton: false, offset: [0, -42] });

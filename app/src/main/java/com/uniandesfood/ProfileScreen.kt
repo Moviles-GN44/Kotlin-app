@@ -302,7 +302,7 @@ fun ProfileScreen(
                     }
 
                     Text(
-                        text = "ISIS-3510 Mobile Applications Development\nUniversidad de los Andes • Group GN-44\nAndroid (Jetpack Compose) & Flutter Subgroups",
+                        text = "ISIS-3510 Mobile Applications Development\nUniversidad de los Andes • Group GN-44",
                         style = MaterialTheme.typography.bodySmall,
                         color = TextMuted,
                         lineHeight = 18.sp

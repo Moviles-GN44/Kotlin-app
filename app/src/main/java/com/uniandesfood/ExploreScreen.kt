@@ -71,7 +71,7 @@ fun ExploreScreen(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            listOf("All", "Executive Lunch", "Fast Food", "Healthy", "Desserts", "Café").forEach { category ->
+            listOf("All", "Executive Lunch", "Fast Food").forEach { category ->
                 CategoryChip(
                     text = category,
                     isSelected = selectedCategory == category,
