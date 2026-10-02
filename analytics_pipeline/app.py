@@ -3,10 +3,13 @@ import json
 import time
 from datetime import datetime
 import urllib.request
+import urllib.parse
 from flask import Flask, jsonify, render_template_string, request
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+from bq4_analysis import calculate_bq4_visits
 
 app = Flask(__name__)
 
@@ -21,6 +24,9 @@ RESTAURANT_NAMES = {
     "la_cabra_sanduchera_rgd": "La Cabra Sanduchera",
     "la_liebre_franco": "La Liebre (Franco)"
 }
+
+CACHE_TTL_SEC = 10
+_events_cache = {"ts": 0.0, "events": []}
 
 def parse_firestore_value(val):
     if not isinstance(val, dict):
@@ -40,21 +46,35 @@ def parse_firestore_value(val):
     return None
 
 def fetch_telemetry_events():
+    now = time.time()
+    if now - _events_cache["ts"] < CACHE_TTL_SEC:
+        return _events_cache["events"]
+    
+    events = []
+    page_token = None
     try:
-        req = urllib.request.Request(FIRESTORE_URL, headers={"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
-            docs = data.get("documents", [])
-            events = []
-            for doc in docs:
+        while True:
+            url = FIRESTORE_URL + "?pageSize=300"
+            if page_token:
+                url += "&pageToken=" + urllib.parse.quote(page_token)
+            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            for doc in data.get("documents", []):
                 fields = doc.get("fields", {})
                 event = {k: parse_firestore_value(v) for k, v in fields.items()}
                 event["doc_id"] = doc.get("name", "").split("/")[-1]
                 events.append(event)
-            return sorted(events, key=lambda x: x.get("timestamp", 0), reverse=True)
+            page_token = data.get("nextPageToken")
+            if not page_token:
+                break
     except Exception as e:
         print(f"Error fetching Firestore telemetry: {e}")
-        return []
+        return _events_cache["events"]
+        
+    events.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
+    _events_cache.update(ts=now, events=events)
+    return events
 
 def calculate_metrics(events):
     # 1. BQ6 - Samuel: Filter Session Duration, Buildings, Dietary, Budgets
@@ -85,18 +105,18 @@ def calculate_metrics(events):
         elif d <= 20: duration_buckets["10-20s"] += 1
         else: duration_buckets["> 20s"] += 1
 
-    # 2. BQ4 - Karin: Menu Photo Inspection
+    # 2. BQ4 - Karin: visits (QR) with vs. without a dish photo opened before
     inspection_events = [e for e in events if e.get("eventName") == "karin_bq_menu_inspection"]
-    inspected_count = sum(1 for e in inspection_events if e.get("params", {}).get("checked_photos", False))
-    total_inspections = len(inspection_events)
-    inspection_rate = round((inspected_count / total_inspections) * 100, 1) if total_inspections > 0 else "N/A"
+    bq4 = calculate_bq4_visits(events)
+    inspection_rate = bq4["pct_with_photos"]
 
     inspected_restaurants = {}
     for e in inspection_events:
         params = e.get("params", {})
-        rid = params.get("restaurant_id", "general")
-        friendly_name = RESTAURANT_NAMES.get(rid, rid)
-        inspected_restaurants[friendly_name] = inspected_restaurants.get(friendly_name, 0) + 1
+        if params.get("checked_photos") is True:
+            rid = params.get("restaurant_id", "general")
+            friendly_name = RESTAURANT_NAMES.get(rid, rid)
+            inspected_restaurants[friendly_name] = inspected_restaurants.get(friendly_name, 0) + 1
 
     # 3. QR Reviews Telemetry
     review_events = [e for e in events if e.get("eventName") == "qr_review_submission"]
@@ -129,8 +149,10 @@ def calculate_metrics(events):
         },
         "bq4_karin": {
             "inspection_rate": inspection_rate,
-            "checked_count": inspected_count,
-            "not_checked_count": total_inspections - inspected_count,
+            "checked_count": bq4["with_photos"],
+            "not_checked_count": bq4["without_photos"],
+            "total_visits": bq4["total_visits"],
+            "ignored_events": bq4["ignored_events"],
             "inspected_restaurants": inspected_restaurants
         },
         "qr_reviews": {
@@ -221,7 +243,7 @@ def dashboard():
                 </div>
 
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg relative overflow-hidden">
-                    <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">BQ4 - Tasa Inspección Fotos</div>
+                    <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">BQ4 - Tasa Visitas con Foto</div>
                     <div class="text-3xl font-extrabold text-emerald-400 mt-2"><span id="kpi-inspection">N/A</span> <span class="text-lg font-normal text-slate-400" id="kpi-inspection-unit"></span></div>
                     <div class="text-xs text-slate-500 mt-2 flex items-center">
                         <i class="fa-solid fa-images text-emerald-400 mr-1.5"></i> Autora: Karin (Tipo 2)
@@ -283,12 +305,12 @@ def dashboard():
                         <div class="inline-flex items-center space-x-2 bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1 rounded-md font-semibold mb-1">
                             <span>BUSINESS QUESTION 4 • KARIN</span>
                         </div>
-                        <h2 class="text-lg font-bold text-white">¿Qué porcentaje de estudiantes revisa fotos del menú antes de decidir?</h2>
+                        <h2 class="text-lg font-bold text-white">¿Qué porcentaje de estudiantes revisa fotos del menú antes de decidir su visita?</h2>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
-                            <h3 class="text-xs font-semibold text-slate-400 mb-2">Revisión de Fotos de Platos</h3>
+                            <h3 class="text-xs font-semibold text-slate-400 mb-2">Visitas según inspección de fotos</h3>
                             <div class="h-44">
                                 <canvas id="chart-photos"></canvas>
                             </div>
@@ -390,7 +412,7 @@ def dashboard():
                 const ctxPhotos = document.getElementById('chart-photos').getContext('2d');
                 charts.photos = new Chart(ctxPhotos, {
                     type: 'pie',
-                    data: { labels: ['Vio Fotos', 'Directo'], datasets: [{ data: [0,0], backgroundColor: ['#10b981', '#475569'] }] },
+                    data: { labels: ['Con Foto Previas', 'Sin Foto Previas'], datasets: [{ data: [0,0], backgroundColor: ['#10b981', '#475569'] }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } } } }
                 });
 
