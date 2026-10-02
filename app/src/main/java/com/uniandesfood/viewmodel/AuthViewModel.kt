@@ -19,7 +19,8 @@ data class AuthUiState(
     val isLoading: Boolean = false,
     val isAuthenticated: Boolean = false,
     val user: User? = null,
-    val generalError: String? = null
+    val generalError: String? = null,
+    val infoMessage: String? = null
 )
 
 class AuthViewModel(
@@ -59,7 +60,8 @@ class AuthViewModel(
         _uiState.value = _uiState.value.copy(
             email = trimmed,
             emailError = authRepository.validateEmail(trimmed),
-            generalError = null
+            generalError = null,
+            infoMessage = null
         )
     }
 
@@ -143,6 +145,30 @@ class AuthViewModel(
                     generalError = error.localizedMessage ?: "Registration failed. Please try again."
                 )
             }
+        }
+    }
+
+    fun forgotPassword() {
+        val current = _uiState.value
+        val emailErr = authRepository.validateEmail(current.email)
+        if (emailErr != null) {
+            _uiState.value = current.copy(emailError = emailErr, infoMessage = null)
+            return
+        }
+        _uiState.value = current.copy(isLoading = true, generalError = null, infoMessage = null)
+        viewModelScope.launch {
+            authRepository.resetPassword(current.email)
+                .onSuccess {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        infoMessage = "If ${current.email.trim()} is registered, we sent a reset link."
+                    )
+                }.onFailure { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        generalError = error.localizedMessage ?: "Could not send the reset email. Try again."
+                    )
+                }
         }
     }
 
