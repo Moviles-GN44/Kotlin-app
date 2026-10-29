@@ -165,4 +165,32 @@ class AnalyticsRepository(
             )
         )
     }
+
+    /**
+     * Karin's BQ8: the student used "Suggest for a Group".
+     */
+    fun logGroupSuggestion(groupSize: Int, resultsCount: Int, building: String) {
+        logEvent(
+            name = "karin_bq_group_suggestion",
+            params = mapOf(
+                "bq_author" to "Karin",
+                "group_size" to groupSize,
+                "results_count" to resultsCount,
+                "building" to building
+            )
+        )
+    }
+
+    /**
+     * Karin's BQ8: the student searched alone (pressed "Apply Filters").
+     */
+    fun logIndividualSearch(building: String) {
+        logEvent(
+            name = "karin_bq_individual_search",
+            params = mapOf(
+                "bq_author" to "Karin",
+                "building" to building
+            )
+        )
+    }
 }

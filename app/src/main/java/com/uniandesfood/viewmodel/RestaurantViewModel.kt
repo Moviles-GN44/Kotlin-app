@@ -5,9 +5,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.uniandesfood.data.local.LocalStore
+import com.uniandesfood.data.model.BudgetRange
 import com.uniandesfood.data.model.FilterCriteria
 import com.uniandesfood.data.model.MenuItem
 import com.uniandesfood.data.model.Restaurant
+import com.uniandesfood.data.model.WaitTimeCategory
 import com.uniandesfood.data.repository.AnalyticsRepository
 import com.uniandesfood.data.repository.RestaurantRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +29,9 @@ class RestaurantViewModel(
     private val _selectedRestaurant = MutableStateFlow<Restaurant?>(restaurantRepository.getAllRestaurants().firstOrNull())
     val selectedRestaurant: StateFlow<Restaurant?> = _selectedRestaurant.asStateFlow()
 
-    private val _favorites = MutableStateFlow<Set<String>>(setOf("el_toro_rgd", "one_burrito_ml"))
+    private val _favorites = MutableStateFlow<Set<String>>(
+        LocalStore.getFavorites() ?: setOf("el_toro_rgd", "one_burrito_ml")
+    )
     val favorites: StateFlow<Set<String>> = _favorites.asStateFlow()
 
     var currentBuilding by mutableStateOf("ML")
@@ -50,11 +55,47 @@ class RestaurantViewModel(
     }
 
     fun filterRestaurants(criteria: FilterCriteria) {
+        analyticsRepository.logIndividualSearch(criteria.selectedBuilding)
         currentCriteria = criteria
         currentBuilding = criteria.selectedBuilding
         val filtered = restaurantRepository.filterRestaurants(criteria)
         _restaurants.value = filtered
         _selectedRestaurant.value = filtered.firstOrNull()
+    }
+
+    // BQ8: suggests the 3 best restaurants for a group.
+    // It reuses the existing filters and does not change the list shown in Explore.
+    fun suggestForGroup(
+        groupSize: Int,
+        isVegan: Boolean,
+        isGlutenFree: Boolean,
+        budget: BudgetRange
+    ): List<Restaurant> {
+        val criteria = FilterCriteria(
+            selectedBuilding = currentBuilding,
+            maxWalkTimeMinutes = 15f,
+            selectedBudget = budget,
+            isVeganSelected = isVegan,
+            isGlutenFreeSelected = isGlutenFree,
+            selectedPayments = emptySet()
+        )
+        val matching = restaurantRepository.filterRestaurants(criteria)
+        // Group size rule (our assumption: in a big group someone is more likely to lose time waiting).
+        // 2-4 people: best rated first.
+        // 5-8 people: drop LONG waits, then shortest wait first, then best rated.
+        val suggestions = if (groupSize >= LARGE_GROUP_SIZE) {
+            matching
+                .filter { it.waitTimeCategory != WaitTimeCategory.LONG }
+                .sortedWith(
+                    compareBy<Restaurant> { it.waitTimeCategory.ordinal }
+                        .thenByDescending { it.rating }
+                )
+                .take(3)
+        } else {
+            matching.sortedByDescending { it.rating }.take(3)
+        }
+        analyticsRepository.logGroupSuggestion(groupSize, suggestions.size, currentBuilding)
+        return suggestions
     }
 
     fun updateCurrentBuilding(building: String) {
@@ -99,10 +140,15 @@ class RestaurantViewModel(
             current.add(restaurantId)
         }
         _favorites.value = current
+        LocalStore.saveFavorites(current)
     }
 
     fun isFavorite(restaurantId: String): Boolean = _favorites.value.contains(restaurantId)
 
     fun findById(id: String): Restaurant? =
         restaurantRepository.getAllRestaurants().find { it.id == id.trim() }
+
+    private companion object {
+        const val LARGE_GROUP_SIZE = 5
+    }
 }

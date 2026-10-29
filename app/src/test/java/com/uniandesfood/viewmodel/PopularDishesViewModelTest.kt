@@ -2,6 +2,7 @@ package com.uniandesfood.viewmodel
 
 import com.uniandesfood.data.repository.PopularDishesRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,9 @@ class PopularDishesViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
+        // By default there is nothing saved in the cache
+        coEvery { repository.getCachedViewCounts(any()) } returns null
+        coEvery { repository.isCacheFresh(any()) } returns false
         viewModel = PopularDishesViewModel(repository)
     }
 
@@ -82,7 +86,7 @@ class PopularDishesViewModelTest {
 
     @Test
     fun loadPopularDishes_ignoresStaleResponseFromPreviousRestaurant() {
-        val slowAnswerA = CompletableDeferred<Map<String, Int>>()
+        val slowAnswerA = CompletableDeferred>()
         coEvery { repository.getDishPhotoViewCounts("restaurant_a") } coAnswers { slowAnswerA.await() }
         coEvery { repository.getDishPhotoViewCounts("restaurant_b") } returns mapOf("b1" to 3)
 
@@ -91,5 +95,23 @@ class PopularDishesViewModelTest {
         slowAnswerA.complete(mapOf("a1" to 5))        // llega tarde la respuesta de A
 
         assertEquals(setOf("b1"), viewModel.popularDishIds.value)
+    }
+
+    @Test
+    fun loadPopularDishes_showsCachedLabelsAndRefreshesFromNetwork() {
+        coEvery { repository.getCachedViewCounts("burger_play_rgd") } returns mapOf("bp1" to 3)
+        coEvery { repository.getDishPhotoViewCounts("burger_play_rgd") } returns mapOf("bp2" to 4)
+        viewModel.loadPopularDishes("burger_play_rgd")
+        // The network answer replaces the cached one
+        assertEquals(setOf("bp2"), viewModel.popularDishIds.value)
+    }
+
+    @Test
+    fun loadPopularDishes_withFreshCacheDoesNotAskTheNetwork() {
+        coEvery { repository.getCachedViewCounts("burger_play_rgd") } returns mapOf("bp1" to 3)
+        coEvery { repository.isCacheFresh("burger_play_rgd") } returns true
+        viewModel.loadPopularDishes("burger_play_rgd")
+        assertEquals(setOf("bp1"), viewModel.popularDishIds.value)
+        coVerify(exactly = 0) { repository.getDishPhotoViewCounts(any()) }
     }
 }
