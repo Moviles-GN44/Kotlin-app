@@ -149,7 +149,14 @@ fun LoginScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = UniandesAmber,
-                                    focusedLabelColor = UniandesAmber
+                                    focusedLabelColor = UniandesAmber,
+                                    focusedTextColor = TextPrimary,
+                                    unfocusedTextColor = TextPrimary,
+                                    errorTextColor = TextPrimary,
+                                    cursorColor = UniandesAmber,
+                                    unfocusedLabelColor = TextSecondary,
+                                    unfocusedPlaceholderColor = TextMuted,
+                                    focusedPlaceholderColor = TextMuted
                                 )
                             )
                             Spacer(modifier = Modifier.height(12.dp))
@@ -177,7 +184,14 @@ fun LoginScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = UniandesAmber,
                                 focusedLabelColor = UniandesAmber,
-                                errorBorderColor = StatusLongRed
+                                errorBorderColor = StatusLongRed,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                errorTextColor = TextPrimary,
+                                cursorColor = UniandesAmber,
+                                unfocusedLabelColor = TextSecondary,
+                                unfocusedPlaceholderColor = TextMuted,
+                                focusedPlaceholderColor = TextMuted
                             )
                         )
                         Row(
@@ -234,7 +248,14 @@ fun LoginScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = UniandesAmber,
                                 focusedLabelColor = UniandesAmber,
-                                errorBorderColor = StatusLongRed
+                                errorBorderColor = StatusLongRed,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary,
+                                errorTextColor = TextPrimary,
+                                cursorColor = UniandesAmber,
+                                unfocusedLabelColor = TextSecondary,
+                                unfocusedPlaceholderColor = TextMuted,
+                                focusedPlaceholderColor = TextMuted
                             )
                         )
                         Row(
