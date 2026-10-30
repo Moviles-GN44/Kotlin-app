@@ -112,7 +112,7 @@ def calculate_metrics(events):
 
     # 4. BQ8 - Karin: "Suggest for a Group" vs individual searches
     group_events = [e for e in events if e.get("eventName") == "karin_bq_group_suggestion"]
-    individual_events = [e for e in events if e.get("eventName") == "karin_bq_individual_search"]
+    individual_events = [e for e in events if e.get("eventName") == "bq_individual_search"]
     group_count = len(group_events)
     individual_count = len(individual_events)
     total_decisions = group_count + individual_count
