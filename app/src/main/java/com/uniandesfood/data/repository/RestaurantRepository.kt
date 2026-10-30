@@ -3,19 +3,15 @@ package com.uniandesfood.data.repository
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import com.uniandesfood.data.local.FileStore
 import com.uniandesfood.data.model.*
 import com.uniandesfood.data.model.Review
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import org.json.JSONArray
-import org.json.JSONObject
 
 class RestaurantRepository(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
@@ -340,41 +336,10 @@ class RestaurantRepository(
     private val _restaurantsFlow = MutableStateFlow(sampleRestaurants)
     val restaurantsFlow: Flow<List<Restaurant>> = _restaurantsFlow.asStateFlow()
 
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     init {
-        loadCachedRestaurants()
         listenToFirestoreRestaurants()
-    }
-
-    private fun loadCachedRestaurants() {
-        coroutineScope.launch {
-            try {
-                val text = FileStore.read(RESTAURANTS_CACHE_FILE) ?: return@launch
-                val array = JSONArray(text)
-                val cached = (0 until array.length()).mapNotNull { index ->
-                    @Suppress("UNCHECKED_CAST")
-                    val map = array.getJSONObject(index).toKotlin() as? Map<String, Any?>
-                    map?.let { Restaurant.fromMap(it) }
-                }.filter { it.id in allowedRestaurantIds }
-                if (cached.isNotEmpty() && _restaurantsFlow.value === sampleRestaurants) {
-                    _restaurantsFlow.value = cached
-                }
-            } catch (_: Exception) {
-            }
-        }
-    }
-
-    private fun saveRestaurantsCache(list: List<Restaurant>) {
-        coroutineScope.launch {
-            try {
-                val array = JSONArray()
-                list.forEach { array.put(JSONObject(it.toMap())) }
-                FileStore.write(RESTAURANTS_CACHE_FILE, array.toString())
-            } catch (e: Exception) {
-                Log.w("RestaurantRepository", "Could not save the restaurants cache", e)
-            }
-        }
     }
 
     private fun listenToFirestoreRestaurants() {
@@ -390,7 +355,6 @@ class RestaurantRepository(
                         }.filter { it.id in allowedRestaurantIds }
                         if (list.isNotEmpty()) {
                             _restaurantsFlow.value = list
-                            saveRestaurantsCache(list)
                         }
                     } else if (snapshot != null && snapshot.isEmpty) {
                         coroutineScope.launch {
@@ -496,15 +460,4 @@ class RestaurantRepository(
             matchesWalkTime && matchesBudget && matchesVegan && matchesGlutenFree && matchesPayment
         }.sortedBy { it.walkDistancesFromBuilding[criteria.selectedBuilding] ?: 99 }
     }
-}
-
-private const val RESTAURANTS_CACHE_FILE = "restaurants_cache.json"
-
-// Converts the JSON read from the cache file into the same Map/List structure that Firestore returns,
-// so Restaurant.fromMap can be reused.
-private fun Any?.toKotlin(): Any? = when (this) {
-    is JSONObject -> keys().asSequence().associateWith { key -> this.opt(key).toKotlin() }
-    is JSONArray -> (0 until length()).map { index -> opt(index).toKotlin() }
-    JSONObject.NULL -> null
-    else -> this
 }

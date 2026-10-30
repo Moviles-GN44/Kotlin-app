@@ -30,8 +30,7 @@ import com.uniandesfood.viewmodel.RestaurantViewModel
 @Composable
 fun ExploreScreen(
     viewModel: RestaurantViewModel? = null,
-    onApplyFilters: () -> Unit = {},
-    onSuggestForGroup: () -> Unit = {}
+    onApplyFilters: () -> Unit = {}
 ) {
     var selectedCategory by remember { mutableStateOf("All") }
     var selectedBuilding by remember { mutableStateOf(viewModel?.currentBuilding ?: "ML") }
@@ -62,14 +61,6 @@ fun ExploreScreen(
             style = MaterialTheme.typography.headlineLarge,
             color = ShadowGrey
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedButton(
-            onClick = onSuggestForGroup,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Suggest for a group")
-        }
 
         Spacer(modifier = Modifier.height(14.dp))
 

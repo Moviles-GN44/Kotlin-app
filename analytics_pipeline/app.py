@@ -110,16 +110,6 @@ def calculate_metrics(events):
         if r in rating_distribution:
             rating_distribution[r] += 1
 
-    # 4. BQ8 - Karin: "Suggest for a Group" vs individual searches
-    group_events = [e for e in events if e.get("eventName") == "karin_bq_group_suggestion"]
-    individual_events = [e for e in events if e.get("eventName") == "karin_bq_individual_search"]
-    group_count = len(group_events)
-    individual_count = len(individual_events)
-    total_decisions = group_count + individual_count
-    group_pct = round((group_count / total_decisions) * 100, 1) if total_decisions > 0 else "N/A"
-    group_sizes = [int(e.get("params", {}).get("group_size", 0)) for e in group_events]
-    avg_group_size = round(sum(group_sizes) / len(group_sizes), 1) if group_sizes else "N/A"
-
     return {
         "summary": {
             "total_events": len(events),
@@ -142,12 +132,6 @@ def calculate_metrics(events):
             "checked_count": inspected_count,
             "not_checked_count": total_inspections - inspected_count,
             "inspected_restaurants": inspected_restaurants
-        },
-        "bq8_karin": {
-            "group_count": group_count,
-            "individual_count": individual_count,
-            "group_pct": group_pct,
-            "avg_group_size": avg_group_size
         },
         "qr_reviews": {
             "avg_rating": avg_rating,
@@ -318,35 +302,6 @@ def dashboard():
                     </div>
                 </section>
 
-                <!-- Karin BQ8 -->
-                <section class="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
-                    <div>
-                        <div class="inline-flex items-center space-x-2 bg-emerald-500/10 text-emerald-400 text-xs px-2.5 py-1 rounded-md font-semibold mb-1">
-                            <span>BUSINESS QUESTION 8 • KARIN</span>
-                        </div>
-                        <h2 class="text-lg font-bold text-white">¿Con qué frecuencia se usa "Sugerir para un grupo" frente a las búsquedas individuales?</h2>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
-                            <h3 class="text-xs font-semibold text-slate-400 mb-2">Grupo vs Individual</h3>
-                            <div class="h-44">
-                                <canvas id="chart-group"></canvas>
-                            </div>
-                        </div>
-                        <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 flex flex-col justify-center space-y-3">
-                            <div>
-                                <div class="text-xs font-semibold text-slate-400">Uso de "Sugerir para un grupo"</div>
-                                <div class="text-3xl font-extrabold text-emerald-400"><span id="kpi-group-pct">N/A</span>%</div>
-                            </div>
-                            <div>
-                                <div class="text-xs font-semibold text-slate-400">Tamaño promedio del grupo</div>
-                                <div class="text-3xl font-extrabold text-amber-400"><span id="kpi-group-size">N/A</span></div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
                 <!-- QR Review Analytics -->
                 <section class="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
                     <div>
@@ -462,14 +417,6 @@ def dashboard():
                     data: { labels: ['Completada', 'Cancelada'], datasets: [{ data: [0,0], backgroundColor: ['#6366f1', '#f43f5e'] }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } } } }
                 });
-
-                // Group vs Individual Chart (BQ8)
-                const ctxGroup = document.getElementById('chart-group').getContext('2d');
-                charts.group = new Chart(ctxGroup, {
-                    type: 'doughnut',
-                    data: { labels: ['Grupo', 'Individual'], datasets: [{ data: [0,0], backgroundColor: ['#10b981', '#475569'] }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } } } }
-                });
             }
 
             async function fetchData() {
@@ -526,12 +473,6 @@ def dashboard():
                     // Update Photos
                     charts.photos.data.datasets[0].data = [data.bq4_karin.checked_count, data.bq4_karin.not_checked_count];
                     charts.photos.update();
-
-                    // Update BQ8
-                    charts.group.data.datasets[0].data = [data.bq8_karin.group_count, data.bq8_karin.individual_count];
-                    charts.group.update();
-                    document.getElementById('kpi-group-pct').innerText = data.bq8_karin.group_pct;
-                    document.getElementById('kpi-group-size').innerText = data.bq8_karin.avg_group_size;
 
                     // Update Locales
                     const locales = data.bq4_karin.inspected_restaurants;

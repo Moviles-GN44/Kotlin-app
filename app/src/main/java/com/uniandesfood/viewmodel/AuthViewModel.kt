@@ -2,7 +2,6 @@ package com.uniandesfood.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.uniandesfood.data.local.ConnectivityHelper
 import com.uniandesfood.data.model.User
 import com.uniandesfood.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -156,16 +155,6 @@ class AuthViewModel(
             _uiState.value = current.copy(emailError = emailErr, infoMessage = null)
             return
         }
-
-        // Password reset needs internet: say it clearly instead of failing with a generic error
-        if (!ConnectivityHelper.isOnline()) {
-            _uiState.value = current.copy(
-                generalError = "No internet connection. Connect to the internet and try again.",
-                infoMessage = null
-            )
-            return
-        }
-
         _uiState.value = current.copy(isLoading = true, generalError = null, infoMessage = null)
         viewModelScope.launch {
             authRepository.resetPassword(current.email)

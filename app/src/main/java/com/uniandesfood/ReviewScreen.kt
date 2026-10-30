@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.uniandesfood.data.local.LocalStore
 import com.uniandesfood.ui.theme.*
 
 private const val MAX_COMMENT_LENGTH = 280
@@ -21,17 +20,10 @@ private const val MAX_COMMENT_LENGTH = 280
 fun ReviewScreen(
     restaurantName: String,
     onSubmit: (Int, String) -> Unit,
-    onCancel: () -> Unit,
-    draftKey: String = ""
+    onCancel: () -> Unit
 ) {
-    val draft = remember(draftKey) {
-        if (draftKey.isEmpty()) null else LocalStore.getReviewDraft(draftKey)
-    }
-    var rating by remember(draftKey) { mutableIntStateOf(draft?.rating ?: 0) }
-    var comment by remember(draftKey) { mutableStateOf(draft?.comment ?: "") }
-    LaunchedEffect(rating, comment) {
-        if (draftKey.isNotEmpty()) LocalStore.saveReviewDraft(draftKey, rating, comment)
-    }
+    var rating by remember { mutableIntStateOf(0) }
+    var comment by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -54,14 +46,6 @@ fun ReviewScreen(
             style = MaterialTheme.typography.titleMedium,
             color = TextMuted
         )
-        if (draft != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "We restored your unsent review.",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextMuted
-            )
-        }
         Spacer(modifier = Modifier.height(24.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
