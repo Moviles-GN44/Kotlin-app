@@ -27,7 +27,9 @@ fun GroupSuggestScreen(
     var isVegan by remember { mutableStateOf(false) }
     var isGlutenFree by remember { mutableStateOf(false) }
     var budget by remember { mutableStateOf(BudgetRange.MEDIUM) }
-    var results by remember { mutableStateOf<List<Restaurant>?>(null) }
+    
+    val results by viewModel.groupSuggestions.collectAsState()
+    val isSuggesting by viewModel.isSuggesting.collectAsState()
     val isOnline by ConnectivityHelper.isOnlineFlow.collectAsState()
 
     Column(
@@ -61,7 +63,6 @@ fun GroupSuggestScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 1. Group size
         Text("How many people?", style = MaterialTheme.typography.titleMedium, color = ShadowGrey)
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedButton(onClick = { if (groupSize > 2) groupSize-- }) { Text("-") }
@@ -75,7 +76,6 @@ fun GroupSuggestScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 2. Dietary restrictions of the group
         Text("Dietary needs in the group", style = MaterialTheme.typography.titleMedium, color = ShadowGrey)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
@@ -92,7 +92,6 @@ fun GroupSuggestScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. Budget
         Text("Budget", style = MaterialTheme.typography.titleMedium, color = ShadowGrey)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             BudgetRange.entries.forEach { option ->
@@ -108,14 +107,23 @@ fun GroupSuggestScreen(
 
         Button(
             onClick = {
-                results = viewModel.suggestForGroup(groupSize, isVegan, isGlutenFree, budget)
+                viewModel.suggestForGroup(groupSize, isVegan, isGlutenFree, budget)
             },
+            enabled = !isSuggesting,
             colors = ButtonDefaults.buttonColors(containerColor = UniandesAmber),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
         ) {
-            Text("Suggest", color = ShadowGrey)
+            if (isSuggesting) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(22.dp),
+                    color = ShadowGrey,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text("Suggest", color = ShadowGrey)
+            }
         }
 
         // 4. Result: top 3 restaurants

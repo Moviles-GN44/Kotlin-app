@@ -1,5 +1,6 @@
 package com.uniandesfood.viewmodel
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -13,10 +14,12 @@ import com.uniandesfood.data.model.Restaurant
 import com.uniandesfood.data.model.WaitTimeCategory
 import com.uniandesfood.data.repository.AnalyticsRepository
 import com.uniandesfood.data.repository.RestaurantRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class RestaurantViewModel(
     private val restaurantRepository: RestaurantRepository = RestaurantRepository(),
@@ -33,6 +36,12 @@ class RestaurantViewModel(
         LocalStore.getFavorites() ?: setOf("el_toro_rgd", "one_burrito_ml")
     )
     val favorites: StateFlow<Set<String>> = _favorites.asStateFlow()
+
+    private val _groupSuggestions = MutableStateFlow<List<Restaurant>?>(null)
+    val groupSuggestions: StateFlow<List<Restaurant>?> = _groupSuggestions.asStateFlow()
+
+    private val _isSuggesting = MutableStateFlow(false)
+    val isSuggesting: StateFlow<Boolean> = _isSuggesting.asStateFlow()
 
     var currentBuilding by mutableStateOf("ML")
         private set
@@ -63,39 +72,45 @@ class RestaurantViewModel(
         _selectedRestaurant.value = filtered.firstOrNull()
     }
 
-    // BQ8: suggests the 3 best restaurants for a group.
-    // It reuses the existing filters and does not change the list shown in Explore.
     fun suggestForGroup(
         groupSize: Int,
         isVegan: Boolean,
         isGlutenFree: Boolean,
         budget: BudgetRange
-    ): List<Restaurant> {
-        val criteria = FilterCriteria(
-            selectedBuilding = currentBuilding,
-            maxWalkTimeMinutes = 15f,
-            selectedBudget = budget,
-            isVeganSelected = isVegan,
-            isGlutenFreeSelected = isGlutenFree,
-            selectedPayments = emptySet()
-        )
-        val matching = restaurantRepository.filterRestaurants(criteria)
-        // Group size rule (our assumption: in a big group someone is more likely to lose time waiting).
-        // 2-4 people: best rated first.
-        // 5-8 people: drop LONG waits, then shortest wait first, then best rated.
-        val suggestions = if (groupSize >= LARGE_GROUP_SIZE) {
-            matching
-                .filter { it.waitTimeCategory != WaitTimeCategory.LONG }
-                .sortedWith(
-                    compareBy<Restaurant> { it.waitTimeCategory.ordinal }
-                        .thenByDescending { it.rating }
+    ) {
+        if (_isSuggesting.value) return 
+        _isSuggesting.value = true
+        val building = currentBuilding
+
+        viewModelScope.launch {
+            val suggestions = withContext(Dispatchers.Default) {
+                Log.d("Threading", "Group suggestion running on: ${Thread.currentThread().name}")
+                val criteria = FilterCriteria(
+                    selectedBuilding = building,
+                    maxWalkTimeMinutes = 15f,
+                    selectedBudget = budget,
+                    isVeganSelected = isVegan,
+                    isGlutenFreeSelected = isGlutenFree,
+                    selectedPayments = emptySet()
                 )
-                .take(3)
-        } else {
-            matching.sortedByDescending { it.rating }.take(3)
+                val matching = restaurantRepository.filterRestaurants(criteria)
+                
+                if (groupSize >= LARGE_GROUP_SIZE) {
+                    matching
+                        .filter { it.waitTimeCategory != WaitTimeCategory.LONG }
+                        .sortedWith(
+                            compareBy<Restaurant> { it.waitTimeCategory.ordinal }
+                                .thenByDescending { it.rating }
+                        )
+                        .take(3)
+                } else {
+                    matching.sortedByDescending { it.rating }.take(3)
+                }
+            }
+            _groupSuggestions.value = suggestions
+            _isSuggesting.value = false
+            analyticsRepository.logGroupSuggestion(groupSize, suggestions.size, building)
         }
-        analyticsRepository.logGroupSuggestion(groupSize, suggestions.size, currentBuilding)
-        return suggestions
     }
 
     fun updateCurrentBuilding(building: String) {
