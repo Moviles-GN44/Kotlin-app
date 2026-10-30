@@ -28,11 +28,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.uniandesfood.data.local.ConnectivityHelper
+import com.uniandesfood.data.local.LocalStore
 import com.uniandesfood.data.model.Restaurant
 import com.uniandesfood.ui.theme.*
 import com.uniandesfood.viewmodel.AuthViewModel
 import com.uniandesfood.viewmodel.FiltersViewModel
 import com.uniandesfood.viewmodel.RestaurantViewModel
+import com.uniandesfood.viewmodel.ReviewSubmitStatus
 import com.uniandesfood.viewmodel.ReviewViewModel
 import kotlinx.coroutines.delay
 
@@ -54,6 +57,12 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Check the connection again when the student comes back to the app
+        ConnectivityHelper.refresh()
     }
 }
 
@@ -91,6 +100,7 @@ private const val SCREEN_PROFILE = 3
 private const val SCREEN_DETAIL = 4
 private const val SCREEN_SCAN_QR = 5
 private const val SCREEN_REVIEW = 6
+private const val SCREEN_GROUP = 7
 
 @Composable
 fun MainAppContainer(
@@ -105,6 +115,7 @@ fun MainAppContainer(
     val authState by authViewModel.uiState.collectAsState()
     val currentUid = authState.user?.uid.orEmpty()
     val context = LocalContext.current
+    val isOnline by ConnectivityHelper.isOnlineFlow.collectAsState()
     var scannedRestaurant by remember { mutableStateOf<Restaurant?>(null) }
 
     LaunchedEffect(scannedRestaurant) {
@@ -123,7 +134,7 @@ fun MainAppContainer(
     }
 
     BackHandler(enabled = currentScreen != SCREEN_MAP) {
-        if (currentScreen in listOf(SCREEN_DETAIL, SCREEN_SCAN_QR, SCREEN_REVIEW)) {
+        if (currentScreen in listOf(SCREEN_DETAIL, SCREEN_SCAN_QR, SCREEN_REVIEW, SCREEN_GROUP)) {
             navigateBack()
         } else {
             currentScreen = SCREEN_MAP
@@ -259,6 +270,23 @@ fun MainAppContainer(
                         onApplyFilters = {
                             previousTab = SCREEN_EXPLORE
                             currentScreen = SCREEN_DETAIL
+                        },
+                        onSuggestForGroup = {
+                            previousTab = SCREEN_EXPLORE
+                            currentScreen = SCREEN_GROUP
+                        }
+                    )
+
+                    SCREEN_GROUP -> GroupSuggestScreen(
+                        viewModel = restaurantViewModel,
+                        onBack = {
+                            currentScreen = SCREEN_EXPLORE
+                            previousTab = SCREEN_EXPLORE
+                        },
+                        onSelectRestaurant = { restaurant ->
+                            restaurantViewModel.selectRestaurant(restaurant.id)
+                            previousTab = SCREEN_EXPLORE
+                            currentScreen = SCREEN_DETAIL
                         }
                     )
 
@@ -298,20 +326,31 @@ fun MainAppContainer(
                     SCREEN_REVIEW -> scannedRestaurant?.let { r ->
                         ReviewScreen(
                             restaurantName = r.name,
+                            draftKey = r.id,
                             onSubmit = { rating, comment ->
-                                reviewViewModel.submitReview(r.id, rating, comment, uid = currentUid)
-                                Toast.makeText(context, "Thank you for rating $rating stars!", Toast.LENGTH_SHORT).show()
+                                val status = reviewViewModel.submitReview(r.id, rating, comment, uid = currentUid)
+                                LocalStore.clearReviewDraft(r.id)
+                                val message = if (status == ReviewSubmitStatus.QUEUED) {
+                                    "No connection: your review was saved and will be sent automatically."
+                                } else {
+                                    "Thank you for rating $rating stars!"
+                                }
+                                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                                 scannedRestaurant = null
                                 currentScreen = SCREEN_DETAIL
                             },
                             onCancel = {
                                 reviewViewModel.cancelReview(r.id)
+                                LocalStore.clearReviewDraft(r.id)
                                 scannedRestaurant = null
                                 currentScreen = SCREEN_DETAIL
                             }
                         )
                     }
                 }
+            }
+            if (!isOnline) {
+                OfflineBanner(modifier = Modifier.align(Alignment.TopCenter))
             }
         }
     }
