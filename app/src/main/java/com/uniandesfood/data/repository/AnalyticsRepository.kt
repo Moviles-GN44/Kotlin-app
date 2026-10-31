@@ -2,8 +2,11 @@ package com.uniandesfood.data.repository
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.uniandesfood.data.local.ConnectivityHelper
+import com.uniandesfood.data.local.PendingQueue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +33,30 @@ data class AnalyticsEvent(
             "params" to params
         )
     }
+
+    fun toJson(): JSONObject = JSONObject()
+        .put("id", eventId)
+        .put("eventName", eventName)
+        .put("timestamp", timestamp)
+        .put("platform", platform)
+        .put("params", JSONObject(params))
+}
+
+fun JSONObject.toEvent(): AnalyticsEvent {
+    val paramsJson = optJSONObject("params")
+    val params = mutableMapOf<String, Any>()
+
+    paramsJson?.keys()?.forEach { key ->
+        paramsJson.opt(key)?.let { params[key] = it }
+    }
+
+    return AnalyticsEvent(
+        eventId = getString("id"),
+        eventName = optString("eventName"),
+        timestamp = optLong("timestamp", System.currentTimeMillis()),
+        platform = optString("platform", "Android-Kotlin"),
+        params = params
+    )
 }
 
 class AnalyticsRepository(
@@ -39,34 +66,57 @@ class AnalyticsRepository(
     private val _events = MutableStateFlow<List<AnalyticsEvent>>(emptyList())
     val events: StateFlow<List<AnalyticsEvent>> = _events.asStateFlow()
 
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // a) Shared Session ID across app lifecycle
     companion object {
         val sessionId: String = UUID.randomUUID().toString()
+
+        private val pendingEvents: PendingQueue by lazy {
+            PendingQueue("pending_events.json")
+        }
     }
 
-    // Optional remote microservice endpoint URL configured by group
     private var remoteEndpointUrl: String? = null
 
     fun setRemoteEndpointUrl(url: String) {
         this.remoteEndpointUrl = url
     }
 
+    init {
+        coroutineScope.launch {
+            ConnectivityHelper.isOnlineFlow.collect { online ->
+                if (online) {
+                    pendingEvents.flush { json ->
+                        sendEvent(json.toEvent())
+                        true
+                    }
+                }
+            }
+        }
+    }
+
     fun logEvent(name: String, params: Map<String, Any> = emptyMap()) {
         val event = AnalyticsEvent(
             eventName = name,
-            // b) Inject session_id into parameter map
             params = params + ("session_id" to sessionId)
         )
+
         _events.value = _events.value + event
 
-        // Asynchronously persist event to Cloud Firestore telemetry collection
         coroutineScope.launch {
-            persistEventToFirestore(event)
-            remoteEndpointUrl?.let { url ->
-                sendEventToHttpEndpoint(url, event)
+            if (ConnectivityHelper.isOnline()) {
+                sendEvent(event)
+            } else {
+                pendingEvents.add(event.toJson())
             }
+        }
+    }
+
+    private fun sendEvent(event: AnalyticsEvent) {
+        persistEventToFirestore(event)
+
+        remoteEndpointUrl?.let { url ->
+            sendEventToHttpEndpoint(url, event)
         }
     }
 
@@ -76,7 +126,6 @@ class AnalyticsRepository(
                 .document(event.eventId)
                 .set(event.toMap(), SetOptions.merge())
         } catch (_: Exception) {
-            // Graceful offline fallback
         }
     }
 
@@ -84,6 +133,7 @@ class AnalyticsRepository(
         try {
             val url = URL(endpointUrl)
             val conn = url.openConnection() as HttpURLConnection
+
             conn.requestMethod = "POST"
             conn.setRequestProperty("Content-Type", "application/json; utf-8")
             conn.setRequestProperty("Accept", "application/json")
@@ -92,14 +142,16 @@ class AnalyticsRepository(
             conn.readTimeout = 5000
 
             val jsonObject = JSONObject(event.toMap())
+
             OutputStreamWriter(conn.outputStream).use { writer ->
                 writer.write(jsonObject.toString())
                 writer.flush()
             }
-            conn.responseCode // Trigger execution
+
+            conn.responseCode
             conn.disconnect()
+
         } catch (_: Exception) {
-            // Telemetry should never crash the user experience
         }
     }
 
@@ -134,7 +186,7 @@ class AnalyticsRepository(
 
     /**
      * Karin's Type 2 BQ:
-     * Tracks student engagement with photographic menus and dish inspection.
+     * Student engagement with photographic menus and dish inspection.
      */
     fun logMenuInspection(
         restaurantId: String,
@@ -148,14 +200,23 @@ class AnalyticsRepository(
             "dish_count" to dishCount,
             "checked_photos" to checkedPhotos
         )
+
         dishId?.let { params["dish_id"] = it }
-        logEvent(name = "karin_bq_menu_inspection", params = params)
+
+        logEvent(
+            name = "karin_bq_menu_inspection",
+            params = params
+        )
     }
 
     /**
      * In-Store QR Review Submission Telemetry
      */
-    fun logQrReviewSubmission(restaurantId: String, rating: Int, isCompleted: Boolean) {
+    fun logQrReviewSubmission(
+        restaurantId: String,
+        rating: Int,
+        isCompleted: Boolean
+    ) {
         logEvent(
             name = "qr_review_submission",
             params = mapOf(
@@ -169,7 +230,11 @@ class AnalyticsRepository(
     /**
      * Karin's BQ8: the student used "Suggest for a Group".
      */
-    fun logGroupSuggestion(groupSize: Int, resultsCount: Int, building: String) {
+    fun logGroupSuggestion(
+        groupSize: Int,
+        resultsCount: Int,
+        building: String
+    ) {
         logEvent(
             name = "karin_bq_group_suggestion",
             params = mapOf(
@@ -186,7 +251,7 @@ class AnalyticsRepository(
      */
     fun logIndividualSearch(building: String) {
         logEvent(
-            name = "karin_bq_individual_search",
+            name = "bq_individual_search",
             params = mapOf(
                 "bq_author" to "Karin",
                 "building" to building
