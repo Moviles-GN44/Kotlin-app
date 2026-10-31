@@ -14,12 +14,12 @@ private val DarkColorScheme = darkColorScheme(
     primary = UniandesAmber,
     secondary = MintEmerald,
     tertiary = LavenderBlush,
-    background = ShadowGrey,
-    surface = ShadowGrey,
+    background = BackgroundOffWhite,
+    surface = CardSurfaceWhite,
     onPrimary = ShadowGrey,
     onSecondary = CardSurfaceWhite,
-    onBackground = CardSurfaceWhite,
-    onSurface = CardSurfaceWhite
+    onBackground = TextPrimary,
+    onSurface = TextPrimary
 )
 
 private val LightColorScheme = lightColorScheme(

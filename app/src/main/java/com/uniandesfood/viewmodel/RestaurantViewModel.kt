@@ -70,6 +70,13 @@ class RestaurantViewModel(
         val filtered = restaurantRepository.filterRestaurants(criteria)
         _restaurants.value = filtered
         _selectedRestaurant.value = filtered.firstOrNull()
+
+        // Samuel's Sprint 3 BQ10: Track building vs generic filter choice
+        analyticsRepository.logBuildingVsGenericFilter(
+            isBuildingFilter = true,
+            selectedBuilding = criteria.selectedBuilding,
+            resultsCount = filtered.size
+        )
     }
 
     fun suggestForGroup(
@@ -122,6 +129,13 @@ class RestaurantViewModel(
         val filtered = restaurantRepository.filterByCategory(category)
         _restaurants.value = filtered
         _selectedRestaurant.value = filtered.firstOrNull()
+
+        // Samuel's Sprint 3 BQ10: Generic category search
+        analyticsRepository.logBuildingVsGenericFilter(
+            isBuildingFilter = false,
+            selectedBuilding = null,
+            resultsCount = filtered.size
+        )
     }
 
     fun selectRestaurant(restaurantId: String) {
@@ -162,6 +176,16 @@ class RestaurantViewModel(
 
     fun findById(id: String): Restaurant? =
         restaurantRepository.getAllRestaurants().find { it.id == id.trim() }
+
+    // Sprint 3 - Concurrency Strategy: Main + I/O Dispatchers
+    fun refreshRestaurantsAsync() {
+        viewModelScope.launch(Dispatchers.Main) {
+            val list = withContext(Dispatchers.IO) {
+                restaurantRepository.getAllRestaurants()
+            }
+            _restaurants.value = list
+        }
+    }
 
     private companion object {
         const val LARGE_GROUP_SIZE = 5
