@@ -31,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.uniandesfood.data.local.ConnectivityHelper
 import com.uniandesfood.data.local.LocalStore
 import com.uniandesfood.data.model.Restaurant
+import com.uniandesfood.data.repository.RestaurantRepository
 import com.uniandesfood.ui.theme.*
 import com.uniandesfood.viewmodel.AuthViewModel
 import com.uniandesfood.viewmodel.FiltersViewModel
@@ -47,6 +48,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        RestaurantRepository.init(this)
         enableEdgeToEdge()
         setContent {
             UniandesFoodTheme {

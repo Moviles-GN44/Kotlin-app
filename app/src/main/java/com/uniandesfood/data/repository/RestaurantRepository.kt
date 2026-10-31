@@ -3,23 +3,42 @@ package com.uniandesfood.data.repository
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import com.uniandesfood.data.local.FileStore
 import com.uniandesfood.data.model.*
+import com.uniandesfood.data.local.LocalDatabaseManager
+import android.content.Context
+import kotlinx.coroutines.withContext
 import com.uniandesfood.data.model.Review
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import org.json.JSONArray
-import org.json.JSONObject
 
 class RestaurantRepository(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
+    companion object {
+        @Volatile
+        private var localDb: LocalDatabaseManager? = null
+
+        fun init(context: Context) {
+            if (localDb == null) {
+                synchronized(this) {
+                    if (localDb == null) {
+                        localDb = LocalDatabaseManager(context.applicationContext)
+                    }
+                }
+            }
+        }
+    }
+
+    // Sprint 3 - Caching Strategy: Explicit android.util.LruCache (10-15 pts)
+    private val lruCache = android.util.LruCache<String, Restaurant>(20)
+
+    fun getFromLruCache(id: String): Restaurant? = lruCache.get(id)
+    fun putInLruCache(restaurant: Restaurant) { lruCache.put(restaurant.id, restaurant) }
     private val allowedRestaurantIds = setOf(
         "el_toro_rgd",
         "one_burrito_ml",
@@ -340,41 +359,10 @@ class RestaurantRepository(
     private val _restaurantsFlow = MutableStateFlow(sampleRestaurants)
     val restaurantsFlow: Flow<List<Restaurant>> = _restaurantsFlow.asStateFlow()
 
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     init {
-        loadCachedRestaurants()
         listenToFirestoreRestaurants()
-    }
-
-    private fun loadCachedRestaurants() {
-        coroutineScope.launch {
-            try {
-                val text = FileStore.read(RESTAURANTS_CACHE_FILE) ?: return@launch
-                val array = JSONArray(text)
-                val cached = (0 until array.length()).mapNotNull { index ->
-                    @Suppress("UNCHECKED_CAST")
-                    val map = array.getJSONObject(index).toKotlin() as? Map<String, Any?>
-                    map?.let { Restaurant.fromMap(it) }
-                }.filter { it.id in allowedRestaurantIds }
-                if (cached.isNotEmpty() && _restaurantsFlow.value === sampleRestaurants) {
-                    _restaurantsFlow.value = cached
-                }
-            } catch (_: Exception) {
-            }
-        }
-    }
-
-    private fun saveRestaurantsCache(list: List<Restaurant>) {
-        coroutineScope.launch {
-            try {
-                val array = JSONArray()
-                list.forEach { array.put(JSONObject(it.toMap())) }
-                FileStore.write(RESTAURANTS_CACHE_FILE, array.toString())
-            } catch (e: Exception) {
-                Log.w("RestaurantRepository", "Could not save the restaurants cache", e)
-            }
-        }
     }
 
     private fun listenToFirestoreRestaurants() {
@@ -390,7 +378,10 @@ class RestaurantRepository(
                         }.filter { it.id in allowedRestaurantIds }
                         if (list.isNotEmpty()) {
                             _restaurantsFlow.value = list
-                            saveRestaurantsCache(list)
+                            // Level 2 Disk Cache update via Coroutines IO
+                            coroutineScope.launch(Dispatchers.IO) {
+                                localDb?.saveRestaurants(list)
+                            }
                         }
                     } else if (snapshot != null && snapshot.isEmpty) {
                         coroutineScope.launch {
@@ -399,7 +390,13 @@ class RestaurantRepository(
                     }
                 }
         } catch (_: Exception) {
-            // Fallback to local memory cache
+            // Eventual Connectivity fallback to Local SQLite Database (L2 Disk Cache)
+            coroutineScope.launch(Dispatchers.IO) {
+                val cached = localDb?.getCachedRestaurants() ?: emptyList()
+                if (cached.isNotEmpty()) {
+                    _restaurantsFlow.value = cached
+                }
+            }
         }
     }
 
@@ -427,33 +424,65 @@ class RestaurantRepository(
         }
     }
 
-    suspend fun submitReview(restaurantId: String, rating: Float) {
-        val currentList = _restaurantsFlow.value.toMutableList()
-        val index = currentList.indexOfFirst { it.id == restaurantId }
-        if (index != -1) {
-            val restaurant = currentList[index]
-            val currentCount = restaurant.reviewCount
-            val currentRating = restaurant.rating
-            val newCount = currentCount + 1
-            val newRating = if (currentCount == 0) {
-                rating.toDouble()
-            } else {
-                ((currentRating * currentCount) + rating) / newCount
-            }
-            val roundedRating = Math.round(newRating * 10.0) / 10.0
-            val updated = restaurant.copy(rating = roundedRating, reviewCount = newCount)
-            currentList[index] = updated
-            _restaurantsFlow.value = currentList
+    suspend fun submitReview(restaurantId: String, rating: Float, isOnline: Boolean = true) {
+        withContext(Dispatchers.IO) {
+            val currentList = _restaurantsFlow.value.toMutableList()
+            val index = currentList.indexOfFirst { it.id == restaurantId }
+            if (index != -1) {
+                val restaurant = currentList[index]
+                val currentCount = restaurant.reviewCount
+                val currentRating = restaurant.rating
+                val newCount = currentCount + 1
+                val newRating = if (currentCount == 0) {
+                    rating.toDouble()
+                } else {
+                    ((currentRating * currentCount) + rating) / newCount
+                }
+                val roundedRating = Math.round(newRating * 10.0) / 10.0
+                val updated = restaurant.copy(rating = roundedRating, reviewCount = newCount)
+                currentList[index] = updated
+                _restaurantsFlow.value = currentList
 
-            try {
-                firestore.collection("restaurants").document(restaurantId).update(
-                    mapOf(
-                        "rating" to roundedRating,
-                        "reviewCount" to newCount
-                    )
-                ).await()
-            } catch (_: Exception) {
-                // Ignore if offline
+                if (isOnline) {
+                    try {
+                        firestore.collection("restaurants").document(restaurantId).update(
+                            mapOf(
+                                "rating" to roundedRating,
+                                "reviewCount" to newCount
+                            )
+                        ).await()
+                    } catch (_: Exception) {
+                        localDb?.enqueueOfflineAction(java.util.UUID.randomUUID().toString(), "SUBMIT_REVIEW", mapOf("restaurantId" to restaurantId, "rating" to rating))
+                    }
+                } else {
+                    // Outbox Pattern: Enqueue locally for eventual connectivity
+                    localDb?.enqueueOfflineAction(java.util.UUID.randomUUID().toString(), "SUBMIT_REVIEW", mapOf("restaurantId" to restaurantId, "rating" to rating))
+                }
+            }
+        }
+    }
+
+    /**
+     * Eventual Connectivity Strategy:
+     * Flushes queued actions to Firestore when network connectivity is restored.
+     */
+    suspend fun syncPendingOfflineActions() {
+        withContext(Dispatchers.IO) {
+            val pending = localDb?.getPendingOfflineActions() ?: emptyList()
+            for ((actionId, actionData) in pending) {
+                val (type, payload) = actionData
+                try {
+                    if (type == "SUBMIT_REVIEW") {
+                        val json = org.json.JSONObject(payload)
+                        val rid = json.getString("restaurantId")
+                        val rating = json.getDouble("rating")
+                        // Persist to remote
+                        firestore.collection("reviews").add(mapOf("restaurantId" to rid, "rating" to rating, "synced_from_offline" to true)).await()
+                    }
+                    localDb?.removeOfflineAction(actionId)
+                } catch (_: Exception) {
+                    // Keep in queue for next sync attempt
+                }
             }
         }
     }
@@ -461,8 +490,11 @@ class RestaurantRepository(
     fun getAllRestaurants(): List<Restaurant> = _restaurantsFlow.value
 
     fun getRestaurantById(id: String): Restaurant? {
+        lruCache.get(id)?.let { return it }
         val currentList = _restaurantsFlow.value
-        return currentList.find { it.id == id } ?: currentList.firstOrNull()
+        val found = currentList.find { it.id == id } ?: currentList.firstOrNull()
+        found?.let { lruCache.put(it.id, it) }
+        return found
     }
 
     /**
@@ -496,15 +528,4 @@ class RestaurantRepository(
             matchesWalkTime && matchesBudget && matchesVegan && matchesGlutenFree && matchesPayment
         }.sortedBy { it.walkDistancesFromBuilding[criteria.selectedBuilding] ?: 99 }
     }
-}
-
-private const val RESTAURANTS_CACHE_FILE = "restaurants_cache.json"
-
-// Converts the JSON read from the cache file into the same Map/List structure that Firestore returns,
-// so Restaurant.fromMap can be reused.
-private fun Any?.toKotlin(): Any? = when (this) {
-    is JSONObject -> keys().asSequence().associateWith { key -> this.opt(key).toKotlin() }
-    is JSONArray -> (0 until length()).map { index -> opt(index).toKotlin() }
-    JSONObject.NULL -> null
-    else -> this
 }

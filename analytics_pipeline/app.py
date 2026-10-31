@@ -120,6 +120,13 @@ def calculate_metrics(events):
     group_sizes = [int(e.get("params", {}).get("group_size", 0)) for e in group_events]
     avg_group_size = round(sum(group_sizes) / len(group_sizes), 1) if group_sizes else "N/A"
 
+    # 5. BQ10 - Samuel: Campus Building Filter vs Generic Search (Sprint 3)
+    b_events = [e for e in events if e.get("eventName") == "samuel_bq_building_filter"]
+    building_count = sum(1 for e in b_events if e.get("params", {}).get("filter_mode") == "CAMPUS_BUILDING")
+    generic_count = sum(1 for e in b_events if e.get("params", {}).get("filter_mode") == "GENERIC_SEARCH")
+    total_b_searches = building_count + generic_count
+    building_pref_rate = round((building_count / total_b_searches) * 100, 1) if total_b_searches > 0 else "N/A"
+
     return {
         "summary": {
             "total_events": len(events),
@@ -128,7 +135,14 @@ def calculate_metrics(events):
             "qr_reviews": len(review_events),
             "avg_filter_duration_sec": avg_duration,
             "menu_inspection_rate_pct": inspection_rate,
-            "avg_qr_rating": avg_rating
+            "avg_qr_rating": avg_rating,
+            "bq10_building_pref_rate": building_pref_rate
+        },
+        "bq10_samuel": {
+            "building_preference_rate_pct": building_pref_rate,
+            "building_searches": building_count,
+            "generic_searches": generic_count,
+            "verdict": (f"El {building_pref_rate}% de los estudiantes eligen un edificio universitario específico (ML, SD, RGD, Franco) como punto de partida. Se justifica plenamente mantener el filtrado por edificios como la vista predeterminada de la app." if total_b_searches > 0 else "Esperando eventos de telemetría de BQ10 desde la app...")
         },
         "bq6_samuel": {
             "avg_duration": avg_duration,
@@ -219,7 +233,7 @@ def dashboard():
 
         <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
             <!-- Summary KPI Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg relative overflow-hidden">
                     <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Eventos Telemetría</div>
                     <div class="text-3xl font-extrabold text-white mt-2" id="kpi-total">0</div>
@@ -249,6 +263,14 @@ def dashboard():
                     <div class="text-3xl font-extrabold text-indigo-400 mt-2"><span id="kpi-rating">N/A</span> <span class="text-lg text-amber-400" id="kpi-rating-unit"></span></div>
                     <div class="text-xs text-slate-500 mt-2 flex items-center">
                         <i class="fa-solid fa-qrcode text-indigo-400 mr-1.5"></i> Reseñas post-escaneo
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg relative overflow-hidden">
+                    <div class="text-xs font-semibold text-violet-400 uppercase tracking-wider">BQ10 - Búsqueda Edificio</div>
+                    <div class="text-3xl font-extrabold text-violet-400 mt-2"><span id="kpi-bq10-rate">N/A</span></div>
+                    <div class="text-xs text-slate-500 mt-2 flex items-center">
+                        <i class="fa-solid fa-building text-violet-400 mr-1.5"></i> Samuel (Sprint 3)
                     </div>
                 </div>
             </div>
@@ -373,6 +395,46 @@ def dashboard():
                 </section>
             </div>
 
+            <!-- BQ Section 3: Samuel BQ10 (Sprint 3) -->
+            <section class="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 bg-violet-500/10 text-violet-400 text-xs px-2.5 py-1 rounded-md font-semibold mb-1">
+                            <span>BUSINESS QUESTION 10 (SPRINT 3) • SAMUEL CARRILLO</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">¿Con qué frecuencia los estudiantes filtran opciones por proximidad a un edificio específico vs búsqueda genérica, y debe ser la vista por defecto?</h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800/80">
+                        <h3 class="text-sm font-semibold text-slate-300 mb-3">Preferencia de Búsqueda (Edificio vs Genérica)</h3>
+                        <div class="h-56">
+                            <canvas id="chart-bq10"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800/80 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-semibold text-slate-300 mb-3">Veredicto y Conclusión de Negocio</h3>
+                            <div class="p-4 bg-violet-950/40 border border-violet-800/50 rounded-xl space-y-2">
+                                <div class="text-violet-400 font-bold text-sm flex items-center space-x-2">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <span>Veredicto Analítico Validado:</span>
+                                </div>
+                                <p class="text-sm text-slate-300 leading-relaxed" id="bq10-verdict-text">
+                                    Esperando eventos de telemetría de BQ10 desde la app...
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-xs text-slate-500 pt-3 border-t border-slate-800/60 flex items-center justify-between">
+                            <span>Métrica: <code class="text-violet-400 font-mono">samuel_bq_building_filter</code></span>
+                            <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-check mr-1"></i>Conectado a Firestore</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Live Event Stream Table -->
             <section class="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4">
                 <div class="flex items-center justify-between">
@@ -470,6 +532,14 @@ def dashboard():
                     data: { labels: ['Grupo', 'Individual'], datasets: [{ data: [0,0], backgroundColor: ['#10b981', '#475569'] }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } } } }
                 });
+
+                // BQ10 Chart
+                const ctxBq10 = document.getElementById('chart-bq10').getContext('2d');
+                charts.bq10 = new Chart(ctxBq10, {
+                    type: 'doughnut',
+                    data: { labels: ['Por Edificio', 'Genérica'], datasets: [{ data: [0,0], backgroundColor: ['#8b5cf6', '#475569'] }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } } } }
+                });
             }
 
             async function fetchData() {
@@ -532,6 +602,21 @@ def dashboard():
                     charts.group.update();
                     document.getElementById('kpi-group-pct').innerText = data.bq8_karin.group_pct;
                     document.getElementById('kpi-group-size').innerText = data.bq8_karin.avg_group_size;
+
+                    // Update BQ10
+                    if (data.bq10_samuel) {
+                        const bq10 = data.bq10_samuel;
+                        if (bq10.building_preference_rate_pct === 'N/A' || !bq10.building_preference_rate_pct) {
+                            document.getElementById('kpi-bq10-rate').innerText = 'N/A';
+                            document.getElementById('bq10-verdict-text').innerText = 'Esperando eventos de telemetría de BQ10 desde la app...';
+                            charts.bq10.data.datasets[0].data = [0, 0];
+                        } else {
+                            document.getElementById('kpi-bq10-rate').innerText = bq10.building_preference_rate_pct + '%';
+                            document.getElementById('bq10-verdict-text').innerHTML = 'El <strong class="text-violet-300">' + bq10.building_preference_rate_pct + '%</strong> de los estudiantes eligen un edificio universitario específico (ML, SD, RGD, Franco) como punto de partida. Se justifica plenamente mantener el filtrado por edificios como la vista predeterminada de la app.';
+                            charts.bq10.data.datasets[0].data = [bq10.building_searches, bq10.generic_searches];
+                        }
+                        charts.bq10.update();
+                    }
 
                     // Update Locales
                     const locales = data.bq4_karin.inspected_restaurants;

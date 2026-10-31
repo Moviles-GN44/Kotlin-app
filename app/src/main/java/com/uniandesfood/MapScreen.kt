@@ -188,6 +188,7 @@ fun MapScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
+                    .clickable { onOpenFilters() }
             ) {
                 Row(
                     modifier = Modifier
@@ -348,13 +349,12 @@ fun MapScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        // Badges Row (Walk time, Rating, Wait queue)
-                        Row(
+                        // Badges Section (Organized in 2 spacious rows so wait time is never squished)
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            // Walk time badge
+                            // Row 1: Walk time badge with full breathing room
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
                                 color = BackgroundOffWhite
@@ -378,41 +378,48 @@ fun MapScreen(
                                 }
                             }
 
-                            // Rating badge
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = BackgroundOffWhite
+                            // Row 2: Wait time badge & Rating badge side by side with plenty of space
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                // Wait time traffic badge
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = statusColor.copy(alpha = 0.15f)
                                 ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_rating_filled),
-                                        contentDescription = "Rating",
-                                        tint = UniandesAmber,
-                                        modifier = Modifier.size(13.dp)
-                                    )
                                     Text(
-                                        text = if (selectedRestaurant.reviewCount == 0) "N/A ★ (0)" else "${selectedRestaurant.rating} ★ (${selectedRestaurant.reviewCount})",
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                        color = ShadowGrey
+                                        text = selectedRestaurant.waitTimeLabel,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = statusColor,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                     )
                                 }
-                            }
 
-                            // Wait time traffic badge
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = statusColor.copy(alpha = 0.15f)
-                            ) {
-                                Text(
-                                    text = selectedRestaurant.waitTimeLabel,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = statusColor,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
+                                // Rating badge
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = BackgroundOffWhite
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_rating_filled),
+                                            contentDescription = "Rating",
+                                            tint = UniandesAmber,
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                        Text(
+                                            text = if (selectedRestaurant.reviewCount == 0) "N/A ★ (0)" else "${selectedRestaurant.rating} ★ (${selectedRestaurant.reviewCount})",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                            color = ShadowGrey
+                                        )
+                                    }
+                                }
                             }
                         }
 
