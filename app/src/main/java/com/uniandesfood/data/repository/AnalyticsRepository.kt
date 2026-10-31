@@ -160,6 +160,26 @@ class AnalyticsRepository(
      * Analyzes latency / duration spent setting up filters, selected campus reference building,
      * walking time limits, budget, and dietary restrictions before finding dining options.
      */
+    /**
+     * Samuel's Sprint 3 Type 3 BQ (BQ10):
+     * Analyzes preference for filtering by campus building vs. generic search.
+     */
+    fun logBuildingVsGenericFilter(
+        isBuildingFilter: Boolean,
+        selectedBuilding: String? = null,
+        resultsCount: Int = 0
+    ) {
+        logEvent(
+            name = "samuel_bq_building_filter",
+            params = mapOf(
+                "bq_author" to "Samuel",
+                "filter_mode" to if (isBuildingFilter) "CAMPUS_BUILDING" else "GENERIC_SEARCH",
+                "building" to (selectedBuilding ?: "NONE"),
+                "results_count" to resultsCount
+            )
+        )
+    }
+
     fun logFilterSession(
         selectedBuilding: String,
         durationSeconds: Long,
