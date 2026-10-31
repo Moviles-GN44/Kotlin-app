@@ -86,7 +86,17 @@ fun ReviewScreen(
             supportingText = { Text("${comment.length}/$MAX_COMMENT_LENGTH") },
             minLines = 3,
             maxLines = 5,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = UniandesAmber,
+                focusedLabelColor = UniandesAmber,
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary,
+                cursorColor = UniandesAmber,
+                unfocusedLabelColor = TextSecondary,
+                unfocusedPlaceholderColor = TextMuted,
+                focusedPlaceholderColor = TextMuted
+            )
         )
 
         Spacer(modifier = Modifier.height(20.dp))
