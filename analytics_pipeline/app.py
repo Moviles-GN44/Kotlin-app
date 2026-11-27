@@ -132,6 +132,33 @@ def calculate_metrics(events):
     online_count = len(offline_events) - offline_count
     offline_pct = round((offline_count / len(offline_events)) * 100, 1) if offline_events else "N/A"
 
+    # 6. BQ1 - Samuel: Highest Average Screen Loading Time (Sprint 4)
+    bq1_events = [e for e in events if e.get("eventName") == "samuel_bq1_screen_load"]
+    screen_buckets = {}
+    cached_loads = []
+    live_loads = []
+    for e in bq1_events:
+        params = e.get("params", {})
+        sname = params.get("screen_name", "Unknown")
+        ms = float(params.get("load_time_ms", 0))
+        if ms <= 0:
+            continue
+        screen_buckets.setdefault(sname, []).append(ms)
+        if params.get("from_cache", False):
+            cached_loads.append(ms)
+        else:
+            live_loads.append(ms)
+
+    screen_avg_ms = {
+        sname: round(sum(vals) / len(vals), 1)
+        for sname, vals in screen_buckets.items()
+    }
+    sorted_screens = dict(sorted(screen_avg_ms.items(), key=lambda kv: kv[1], reverse=True))
+    slowest_screen = next(iter(sorted_screens), "N/A")
+    slowest_avg_ms = sorted_screens[slowest_screen] if slowest_screen != "N/A" else "N/A"
+    avg_cached_ms = round(sum(cached_loads) / len(cached_loads), 1) if cached_loads else "N/A"
+    avg_live_ms = round(sum(live_loads) / len(live_loads), 1) if live_loads else "N/A"
+
     return {
         "summary": {
             "total_events": len(events),
@@ -141,7 +168,23 @@ def calculate_metrics(events):
             "avg_filter_duration_sec": avg_duration,
             "menu_inspection_rate_pct": inspection_rate,
             "avg_qr_rating": avg_rating,
-            "bq10_building_pref_rate": building_pref_rate
+            "bq10_building_pref_rate": building_pref_rate,
+            "bq1_slowest_screen": slowest_screen,
+            "bq1_slowest_avg_ms": slowest_avg_ms
+        },
+        "bq1_samuel": {
+            "screen_avg_ms": sorted_screens,
+            "screen_sample_counts": {k: len(v) for k, v in screen_buckets.items()},
+            "slowest_screen": slowest_screen,
+            "slowest_avg_ms": slowest_avg_ms,
+            "avg_cached_ms": avg_cached_ms,
+            "avg_live_ms": avg_live_ms,
+            "total_samples": len(bq1_events),
+            "verdict": (
+                f"La pantalla con mayor tiempo promedio de carga es {slowest_screen} ({slowest_avg_ms} ms sobre {len(bq1_events)} mediciones). "
+                + (f"Las cargas desde caché promedian {avg_cached_ms} ms frente a {avg_live_ms} ms en vivo." if avg_cached_ms != "N/A" and avg_live_ms != "N/A" else "Prioriza esta vista para micro-optimización y caché.")
+                if slowest_screen != "N/A" else "Esperando eventos de telemetría de BQ1 desde la app..."
+            )
         },
         "bq10_samuel": {
             "building_preference_rate_pct": building_pref_rate,
@@ -227,7 +270,7 @@ def dashboard():
                 </div>
                 <div>
                     <h1 class="text-xl font-bold text-white tracking-wide">Uniandes Food - Analytics Pipeline</h1>
-                    <p class="text-xs text-slate-400">ISIS-3510 Desarrollo de Aplicaciones Móviles • Sprint 2 • Grupo GN-44</p>
+                    <p class="text-xs text-slate-400">ISIS-3510 Desarrollo de Aplicaciones Móviles • Sprint 4 • Grupo GN-44</p>
                 </div>
             </div>
             <div class="flex items-center space-x-3">
@@ -243,7 +286,7 @@ def dashboard():
 
         <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
             <!-- Summary KPI Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg relative overflow-hidden">
                     <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Eventos Telemetría</div>
                     <div class="text-3xl font-extrabold text-white mt-2" id="kpi-total">0</div>
@@ -281,6 +324,15 @@ def dashboard():
                     <div class="text-3xl font-extrabold text-violet-400 mt-2"><span id="kpi-bq10-rate">N/A</span></div>
                     <div class="text-xs text-slate-500 mt-2 flex items-center">
                         <i class="fa-solid fa-building text-violet-400 mr-1.5"></i> Samuel (Sprint 3)
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg relative overflow-hidden">
+                    <div class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">BQ1 - Pantalla Más Lenta</div>
+                    <div class="text-xl font-extrabold text-cyan-400 mt-2 truncate" id="kpi-bq1-screen">N/A</div>
+                    <div class="text-xs text-slate-400 mt-1 font-semibold"><span id="kpi-bq1-ms">--</span> ms prom.</div>
+                    <div class="text-xs text-slate-500 mt-1 flex items-center">
+                        <i class="fa-solid fa-gauge-high text-cyan-400 mr-1.5"></i> Samuel (Sprint 4)
                     </div>
                 </div>
             </div>
@@ -445,6 +497,56 @@ def dashboard():
                 </div>
             </section>
 
+            <!-- BQ Section 4: Samuel BQ1 (Sprint 4) -->
+            <section class="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 bg-cyan-500/10 text-cyan-400 text-xs px-2.5 py-1 rounded-md font-semibold mb-1">
+                            <span>BUSINESS QUESTION 1 (SPRINT 4 • TIPO 1) • SAMUEL CARRILLO</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">¿Qué pantallas o funcionalidades de Uniandes Food tienen el mayor tiempo promedio de carga durante su uso?</h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800/80">
+                        <h3 class="text-sm font-semibold text-slate-300 mb-3">Tiempo Promedio de Carga por Pantalla (ms)</h3>
+                        <div class="h-60">
+                            <canvas id="chart-bq1"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800/80 flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <h3 class="text-sm font-semibold text-slate-300">Diagnóstico de Rendimiento y Caché</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                                    <div class="text-[11px] text-slate-400 uppercase">Promedio En Vivo</div>
+                                    <div class="text-xl font-bold text-amber-400 mt-1"><span id="bq1-live-ms">N/A</span></div>
+                                </div>
+                                <div class="p-3 bg-slate-900 rounded-xl border border-slate-800">
+                                    <div class="text-[11px] text-slate-400 uppercase">Promedio Caché</div>
+                                    <div class="text-xl font-bold text-emerald-400 mt-1"><span id="bq1-cached-ms">N/A</span></div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-cyan-950/40 border border-cyan-800/50 rounded-xl space-y-1.5">
+                                <div class="text-cyan-400 font-bold text-sm flex items-center space-x-2">
+                                    <i class="fa-solid fa-bolt"></i>
+                                    <span>Conclusión BQ1:</span>
+                                </div>
+                                <p class="text-sm text-slate-300 leading-relaxed" id="bq1-verdict-text">
+                                    Esperando eventos de telemetría de BQ1 desde la app...
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-xs text-slate-500 pt-3 border-t border-slate-800/60 flex items-center justify-between">
+                            <span>Métrica: <code class="text-cyan-400 font-mono">samuel_bq1_screen_load</code></span>
+                            <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-check mr-1"></i>Conectado a Firestore</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Live Event Stream Table -->
             <section class="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4">
                 <div class="flex items-center justify-between">
@@ -550,6 +652,23 @@ def dashboard():
                     data: { labels: ['Por Edificio', 'Genérica'], datasets: [{ data: [0,0], backgroundColor: ['#8b5cf6', '#475569'] }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } } } }
                 });
+
+                // BQ1 Chart (Sprint 4 - Average Screen Load Time in ms)
+                const ctxBq1 = document.getElementById('chart-bq1').getContext('2d');
+                charts.bq1 = new Chart(ctxBq1, {
+                    type: 'bar',
+                    data: { labels: [], datasets: [{ label: 'Carga Promedio (ms)', data: [], backgroundColor: '#22d3ee' }] },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } },
+                            y: { grid: { color: '#1e293b' }, ticks: { color: '#cbd5e1' } }
+                        }
+                    }
+                });
             }
 
             async function fetchData() {
@@ -626,6 +745,26 @@ def dashboard():
                             charts.bq10.data.datasets[0].data = [bq10.building_searches, bq10.generic_searches];
                         }
                         charts.bq10.update();
+                    }
+
+                    // Update BQ1 (Sprint 4 - Screen Loading Time)
+                    if (data.bq1_samuel) {
+                        const bq1 = data.bq1_samuel;
+                        document.getElementById('kpi-bq1-screen').textContent = bq1.slowest_screen || 'N/A';
+                        document.getElementById('kpi-bq1-ms').textContent = bq1.slowest_avg_ms === 'N/A' ? '--' : bq1.slowest_avg_ms;
+                        document.getElementById('bq1-live-ms').textContent = bq1.avg_live_ms === 'N/A' ? 'N/A' : (bq1.avg_live_ms + ' ms');
+                        document.getElementById('bq1-cached-ms').textContent = bq1.avg_cached_ms === 'N/A' ? 'N/A' : (bq1.avg_cached_ms + ' ms');
+                        document.getElementById('bq1-verdict-text').textContent = bq1.verdict;
+
+                        const screens = bq1.screen_avg_ms || {};
+                        if (Object.keys(screens).length > 0) {
+                            charts.bq1.data.labels = Object.keys(screens);
+                            charts.bq1.data.datasets[0].data = Object.values(screens);
+                        } else {
+                            charts.bq1.data.labels = ['Sin mediciones'];
+                            charts.bq1.data.datasets[0].data = [0];
+                        }
+                        charts.bq1.update();
                     }
 
                     // Update Locales

@@ -177,6 +177,17 @@ class RestaurantViewModel(
     fun findById(id: String): Restaurant? =
         restaurantRepository.getAllRestaurants().find { it.id == id.trim() }
 
+    /**
+     * Samuel's Sprint 4 BQ1: Records screen loading duration in milliseconds.
+     */
+    fun logScreenLoadTime(screenName: String, loadTimeMs: Long, fromCache: Boolean = false) {
+        analyticsRepository.logScreenLoadTime(
+            screenName = screenName,
+            loadTimeMs = loadTimeMs,
+            fromCache = fromCache
+        )
+    }
+
     // Sprint 3 - Concurrency Strategy: Main + I/O Dispatchers
     fun refreshRestaurantsAsync() {
         viewModelScope.launch(Dispatchers.Main) {

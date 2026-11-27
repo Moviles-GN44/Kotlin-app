@@ -288,5 +288,25 @@ class AnalyticsRepository(
                 "was_offline" to wasOffline
             )
         )
-    }    
+    }
+
+    /**
+     * Samuel's Sprint 4 Type 1 BQ (BQ1):
+     * Measures average loading time (ms) per screen or feature across the app.
+     */
+    fun logScreenLoadTime(
+        screenName: String,
+        loadTimeMs: Long,
+        fromCache: Boolean = false
+    ) {
+        logEvent(
+            name = "samuel_bq1_screen_load",
+            params = mapOf(
+                "bq_author" to "Samuel",
+                "screen_name" to screenName,
+                "load_time_ms" to loadTimeMs.coerceAtLeast(1L),
+                "from_cache" to fromCache
+            )
+        )
+    }
 }
