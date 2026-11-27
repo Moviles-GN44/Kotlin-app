@@ -506,26 +506,62 @@ class RestaurantRepository(
         }
     }
 
+    // Sprint 4 Micro-optimization: memoized filter result + single-lookup sort
+    private var lastFilterCriteria: FilterCriteria? = null
+    private var lastFilterSource: List<Restaurant>? = null
+    private var lastFilteredResult: List<Restaurant>? = null
+
     /**
-     * Context-aware memory-efficient filter (RAM optimized)
-     * Filters and sorts by shortest walking distance to the chosen campus building.
+     * Context-aware memory-efficient filter (Sprint 4 micro-optimized):
+     * - Memoizes results when inputs (criteria and source list) have not changed (O(1) hit).
+     * - Computes walk distance once per matching restaurant instead of repeating map lookups
+     *   inside the O(N log N) comparator, avoiding intermediate list allocations.
      */
     fun filterRestaurants(criteria: FilterCriteria): List<Restaurant> {
-        return _restaurantsFlow.value.filter { restaurant ->
-            val walkTime = restaurant.walkDistancesFromBuilding[criteria.selectedBuilding] ?: 15
-            val matchesWalkTime = walkTime <= criteria.maxWalkTimeMinutes.toInt()
-            
-            val matchesBudget = when (criteria.selectedBudget) {
+        val source = _restaurantsFlow.value
+        val cachedCriteria = lastFilterCriteria
+        val cachedSource = lastFilterSource
+        val cachedResult = lastFilteredResult
+        if (cachedResult != null && cachedCriteria == criteria && cachedSource === source) {
+            return cachedResult
+        }
+
+        val building = criteria.selectedBuilding
+        val maxWalk = criteria.maxWalkTimeMinutes.toInt()
+        val budget = criteria.selectedBudget
+        val veganOnly = criteria.isVeganSelected
+        val glutenFreeOnly = criteria.isGlutenFreeSelected
+        val payments = criteria.selectedPayments
+        val checkPayments = payments.isNotEmpty()
+
+        val matchedWithWalk = ArrayList<Pair<Restaurant, Int>>(source.size)
+        for (i in 0 until source.size) {
+            val restaurant = source[i]
+            val walkTime = restaurant.walkDistancesFromBuilding[building] ?: 15
+            if (walkTime > maxWalk) continue
+
+            val matchesBudget = when (budget) {
                 BudgetRange.CHEAP -> restaurant.averagePriceCOP <= 15000
                 BudgetRange.MEDIUM -> restaurant.averagePriceCOP in 10000..25000
                 BudgetRange.HIGH -> restaurant.averagePriceCOP >= 20000
             }
+            if (!matchesBudget) continue
+            if (veganOnly && !restaurant.isVeganFriendly) continue
+            if (glutenFreeOnly && !restaurant.isGlutenFreeFriendly) continue
+            if (checkPayments && !restaurant.paymentMethods.any { it in payments }) continue
 
-            val matchesVegan = !criteria.isVeganSelected || restaurant.isVeganFriendly
-            val matchesGlutenFree = !criteria.isGlutenFreeSelected || restaurant.isGlutenFreeFriendly
-            val matchesPayment = criteria.selectedPayments.isEmpty() || restaurant.paymentMethods.any { it in criteria.selectedPayments }
+            matchedWithWalk.add(restaurant to walkTime)
+        }
 
-            matchesWalkTime && matchesBudget && matchesVegan && matchesGlutenFree && matchesPayment
-        }.sortedBy { it.walkDistancesFromBuilding[criteria.selectedBuilding] ?: 99 }
+        matchedWithWalk.sortBy { it.second }
+        val result = ArrayList<Restaurant>(matchedWithWalk.size)
+        for (i in 0 until matchedWithWalk.size) {
+            result.add(matchedWithWalk[i].first)
+        }
+
+        lastFilterCriteria = criteria
+        lastFilterSource = source
+        lastFilteredResult = result
+        return result
     }
 }

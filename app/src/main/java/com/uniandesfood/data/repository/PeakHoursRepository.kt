@@ -1,5 +1,6 @@
 package com.uniandesfood.data.repository
 
+import android.os.Trace
 import android.util.Log
 import androidx.collection.LruCache
 import com.google.firebase.Timestamp
@@ -172,44 +173,108 @@ class PeakHoursRepository(
     }
 
     /**
-     * Groups wait-time reports by hour of day (0..23) and selects the quietest hour from [currentHour] onward.
+     * Sprint 4 Micro-optimization:
+     * Aggregates wait-time reports in a single O(N) pass using fixed-size primitive arrays
+     * (DoubleArray/IntArray of length 24), eliminating 24 repeated scans, intermediate List
+     * allocations, Double autoboxing, and comparator objects.
      */
     fun aggregateReports(
         restaurantId: String,
         reports: List<WaitTimeReport>,
         currentHour: Int,
         nowMillis: Long = nowProvider()
-    ): HourlyWaitProfile {
-        val slots = (0..23).mapNotNull { hour ->
-            val hourReports = reports.filter { it.hour == hour }
-            if (hourReports.isEmpty()) {
-                null
-            } else {
-                val avgWait = hourReports.map { it.waitMinutes }.average()
-                val over15 = hourReports.count { it.waitMinutes > 15.0 }
-                HourlyWaitSlot(
-                    hour = hour,
-                    averageWaitMinutes = avgWait,
-                    reportCount = hourReports.size,
-                    over15MinCount = over15
-                )
+    ): HourlyWaitProfile = traceSection("PeakHours.aggregateOptimized") {
+        val startNs = System.nanoTime()
+        val sumByHour = DoubleArray(24)
+        val countByHour = IntArray(24)
+        val over15ByHour = IntArray(24)
+
+        for (i in 0 until reports.size) {
+            val report = reports[i]
+            val hour = report.hour
+            if (hour in 0..23) {
+                val wait = report.waitMinutes
+                sumByHour[hour] += wait
+                countByHour[hour]++
+                if (wait > 15.0) {
+                    over15ByHour[hour]++
+                }
             }
         }
 
-        val upcoming = slots.filter { it.hour >= currentHour }
-        val candidates = if (upcoming.isNotEmpty()) upcoming else slots
-        val best = candidates.minWithOrNull(
-            compareBy<HourlyWaitSlot> { it.averageWaitMinutes }.thenBy { it.hour }
-        )
+        val slots = ArrayList<HourlyWaitSlot>(12)
+        var bestUpcomingHour = -1
+        var bestUpcomingAvg = Double.MAX_VALUE
+        var bestAnyHour = -1
+        var bestAnyAvg = Double.MAX_VALUE
 
-        return HourlyWaitProfile(
+        for (hour in 0..23) {
+            val count = countByHour[hour]
+            if (count > 0) {
+                val avgWait = sumByHour[hour] / count
+                slots.add(
+                    HourlyWaitSlot(
+                        hour = hour,
+                        averageWaitMinutes = avgWait,
+                        reportCount = count,
+                        over15MinCount = over15ByHour[hour]
+                    )
+                )
+                if (avgWait < bestAnyAvg) {
+                    bestAnyAvg = avgWait
+                    bestAnyHour = hour
+                }
+                if (hour >= currentHour && avgWait < bestUpcomingAvg) {
+                    bestUpcomingAvg = avgWait
+                    bestUpcomingHour = hour
+                }
+            }
+        }
+
+        val chosenHour = if (bestUpcomingHour != -1) bestUpcomingHour else if (bestAnyHour != -1) bestAnyHour else null
+        val chosenAvg = when {
+            bestUpcomingHour != -1 -> bestUpcomingAvg
+            bestAnyHour != -1 -> bestAnyAvg
+            else -> null
+        }
+
+        val elapsedUs = (System.nanoTime() - startNs) / 1_000L
+        safeLogDebug("PeakHours.aggregateOptimized (${reports.size} reports): ${elapsedUs} us")
+
+        HourlyWaitProfile(
             restaurantId = restaurantId,
             slots = slots,
             totalReports = reports.size,
-            recommendedHour = best?.hour,
-            recommendedWaitMinutes = best?.averageWaitMinutes,
+            recommendedHour = chosenHour,
+            recommendedWaitMinutes = chosenAvg,
             savedAtMillis = nowMillis
         )
+    }
+
+    private inline fun <T> traceSection(label: String, block: () -> T): T {
+        val traced = try {
+            Trace.beginSection(label)
+            true
+        } catch (_: Throwable) {
+            false
+        }
+        return try {
+            block()
+        } finally {
+            if (traced) {
+                try {
+                    Trace.endSection()
+                } catch (_: Throwable) {
+                }
+            }
+        }
+    }
+
+    private fun safeLogDebug(message: String) {
+        try {
+            Log.d("Profiler", message)
+        } catch (_: Throwable) {
+        }
     }
 
     private fun recomputeRecommendation(
