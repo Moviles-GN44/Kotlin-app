@@ -3,12 +3,16 @@ package com.uniandesfood.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.uniandesfood.data.local.ConnectivityHelper
+import com.uniandesfood.data.local.MyReview
+import com.uniandesfood.data.local.MyReviewsStore
 import com.uniandesfood.data.local.PendingQueue
 import com.uniandesfood.data.model.Review
 import com.uniandesfood.data.repository.AnalyticsRepository
 import com.uniandesfood.data.repository.RestaurantRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.util.UUID
 
@@ -49,7 +53,10 @@ class ReviewViewModel(
             uid = uid
         )
 
-        if (!isOnline()) {
+        val online = isOnline()
+        saveInMyReviews(review, online)
+
+        if (!online) {
             viewModelScope.launch { pendingQueue.add(review.toJson()) }
             return ReviewSubmitStatus.QUEUED
         }
@@ -61,7 +68,6 @@ class ReviewViewModel(
         return ReviewSubmitStatus.SENT
     }
 
-    // Cancelled reviews are logged too, so the completion rate can be computed
     fun cancelReview(restaurantId: String) {
         analyticsRepository.logQrReviewSubmission(
             restaurantId = restaurantId,
@@ -70,10 +76,31 @@ class ReviewViewModel(
         )
     }
 
+    private fun saveInMyReviews(review: Review, isSent: Boolean) {
+        val restaurantName = restaurantRepository.getAllRestaurants()
+            .find { it.id == review.restaurantId }?.name ?: review.restaurantId
+        viewModelScope.launch(Dispatchers.IO) {
+            MyReviewsStore.save(
+                MyReview(
+                    id = review.id,
+                    restaurantId = review.restaurantId,
+                    restaurantName = restaurantName,
+                    rating = review.rating,
+                    comment = review.comment,
+                    timestamp = review.timestamp,
+                    isSent = isSent
+                )
+            )
+        }
+    }
+
     private suspend fun sendPendingReviews() {
         pendingQueue.flush { json ->
             val review = json.toReview()
             restaurantRepository.saveReview(review)
+            withContext(Dispatchers.IO) {
+                MyReviewsStore.markAsSent(review.id)
+            }
             viewModelScope.launch {
                 restaurantRepository.submitReview(
                     review.restaurantId,

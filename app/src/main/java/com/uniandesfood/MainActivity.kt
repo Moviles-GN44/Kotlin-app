@@ -103,6 +103,7 @@ private const val SCREEN_DETAIL = 4
 private const val SCREEN_SCAN_QR = 5
 private const val SCREEN_REVIEW = 6
 private const val SCREEN_GROUP = 7
+private const val SCREEN_MY_REVIEWS = 8
 
 @Composable
 fun MainAppContainer(
@@ -136,7 +137,7 @@ fun MainAppContainer(
     }
 
     BackHandler(enabled = currentScreen != SCREEN_MAP) {
-        if (currentScreen in listOf(SCREEN_DETAIL, SCREEN_SCAN_QR, SCREEN_REVIEW, SCREEN_GROUP)) {
+        if (currentScreen in listOf(SCREEN_DETAIL, SCREEN_SCAN_QR, SCREEN_REVIEW, SCREEN_GROUP, SCREEN_MY_REVIEWS)){
             navigateBack()
         } else {
             currentScreen = SCREEN_MAP
@@ -308,8 +309,14 @@ fun MainAppContainer(
                     SCREEN_PROFILE -> ProfileScreen(
                         authViewModel = authViewModel,
                         restaurantViewModel = restaurantViewModel,
-                        onLogout = onLogout
+                        onLogout = onLogout,
+                        onOpenMyReviews = {
+                            previousTab = SCREEN_PROFILE
+                            currentScreen = SCREEN_MY_REVIEWS
+                        }
                     )
+
+                    SCREEN_MY_REVIEWS -> MyReviewsScreen(onBack = navigateBack)
 
                     SCREEN_DETAIL -> RestaurantDetailScreen(
                         viewModel = restaurantViewModel,

@@ -5,12 +5,14 @@ import android.content.pm.ApplicationInfo
 import android.os.StrictMode
 import com.uniandesfood.data.local.AppStorage
 import com.uniandesfood.data.local.ConnectivityHelper
+import com.uniandesfood.data.local.MyReviewsStore
 
 class UniandesFoodApp : Application() {
     override fun onCreate() {
         super.onCreate()
         AppStorage.init(this)
         ConnectivityHelper.init(this)
+        MyReviewsStore.init(this)
         
         // Para ver: logs a warning if the main thread does disk or network work
         val isDebuggable = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
