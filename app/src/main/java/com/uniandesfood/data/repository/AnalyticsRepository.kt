@@ -278,4 +278,15 @@ class AnalyticsRepository(
             )
         )
     }
+
+    fun logReviewConnection(restaurantId: String, wasOffline: Boolean) {
+        logEvent(
+            name = "karin_bq_offline_reviews",
+            params = mapOf(
+                "bq_author" to "Karin",
+                "restaurant_id" to restaurantId,
+                "was_offline" to wasOffline
+            )
+        )
+    }    
 }

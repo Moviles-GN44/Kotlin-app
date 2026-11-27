@@ -126,6 +126,11 @@ def calculate_metrics(events):
     generic_count = sum(1 for e in b_events if e.get("params", {}).get("filter_mode") == "GENERIC_SEARCH")
     total_b_searches = building_count + generic_count
     building_pref_rate = round((building_count / total_b_searches) * 100, 1) if total_b_searches > 0 else "N/A"
+    
+    offline_events = [e for e in events if e.get("eventName") == "karin_bq_offline_reviews"]
+    offline_count = sum(1 for e in offline_events if e.get("params", {}).get("was_offline", False))
+    online_count = len(offline_events) - offline_count
+    offline_pct = round((offline_count / len(offline_events)) * 100, 1) if offline_events else "N/A"
 
     return {
         "summary": {
@@ -162,6 +167,11 @@ def calculate_metrics(events):
             "individual_count": individual_count,
             "group_pct": group_pct,
             "avg_group_size": avg_group_size
+        },
+        "bq_offline_karin": {
+            "offline_reviews": offline_count,
+            "online_reviews": online_count,
+            "offline_pct": offline_pct
         },
         "qr_reviews": {
             "avg_rating": avg_rating,

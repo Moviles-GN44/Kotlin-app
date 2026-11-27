@@ -55,6 +55,7 @@ class ReviewViewModel(
 
         val online = isOnline()
         saveInMyReviews(review, online)
+        analyticsRepository.logReviewConnection(restaurantId, !online)
 
         if (!online) {
             viewModelScope.launch { pendingQueue.add(review.toJson()) }
