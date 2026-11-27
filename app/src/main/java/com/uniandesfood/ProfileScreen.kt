@@ -33,7 +33,8 @@ import com.uniandesfood.viewmodel.RestaurantViewModel
 fun ProfileScreen(
     authViewModel: AuthViewModel? = null,
     restaurantViewModel: RestaurantViewModel? = null,
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    onOpenMyReviews: () -> Unit = {}
 ) {
     val authState = authViewModel?.uiState?.collectAsState()?.value
     val favorites = restaurantViewModel?.favorites?.collectAsState()?.value ?: emptySet()
@@ -321,6 +322,22 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             // Logout Button
+                        Button(
+                onClick = onOpenMyReviews,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = UniandesAmber,
+                    contentColor = ShadowGrey
+                )
+            ) {
+                Text(
+                    text = "My Reviews",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                )
+            }
             OutlinedButton(
                 onClick = onLogout,
                 modifier = Modifier
