@@ -96,6 +96,7 @@ class PeakHoursRepositoryTest {
     @Test
     fun `parseWaitTimeMinutes supports both Flutter and Kotlin wait time values`() {
         assertEquals(3.0, PeakHoursRepository.parseWaitTimeMinutes("under5")!!, 0.01)
+        assertEquals(10.0, PeakHoursRepository.parseWaitTimeMinutes("fiveTo15")!!, 0.01)
         assertEquals(7.5, PeakHoursRepository.parseWaitTimeMinutes("fiveToTen")!!, 0.01)
         assertEquals(12.5, PeakHoursRepository.parseWaitTimeMinutes("tenToFifteen")!!, 0.01)
         assertEquals(18.0, PeakHoursRepository.parseWaitTimeMinutes("over15")!!, 0.01)

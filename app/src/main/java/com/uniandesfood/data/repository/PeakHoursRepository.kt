@@ -391,6 +391,7 @@ class PeakHoursRepository(
             val normalized = raw.toString().trim().lowercase()
             return when (normalized) {
                 "under5", "lessthan5", "under_5", "less_than_5", "fast", "short", "< 5 min", "<5 min", "< 5 min wait" -> 3.0
+                "fiveto15", "five_to_15", "5_15", "5-15", "5-15 min" -> 10.0
                 "fivetoten", "five_to_ten", "5_10", "5-10", "5-10 min", "5-10 min wait", "moderate", "medium" -> 7.5
                 "tentofifteen", "ten_to_fifteen", "10_15", "10-15", "10-15 min" -> 12.5
                 "over15", "morethan15", "over_15", "more_than_15", "fifteenplus", "long", "> 15 min", ">15 min", "> 10 min wait" -> 18.0
