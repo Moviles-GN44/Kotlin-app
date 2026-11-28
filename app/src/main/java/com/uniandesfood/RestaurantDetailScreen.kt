@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Schedule
 import androidx.lifecycle.viewmodel.compose.viewModel as composeViewModel
 import com.uniandesfood.data.model.MenuItem
 import com.uniandesfood.data.model.Restaurant
@@ -37,6 +38,7 @@ fun RestaurantDetailScreen(
     viewModel: RestaurantViewModel? = null,
     onBack: () -> Unit = {},
     onScanQR: () -> Unit = {},
+    onBestTimeToGo: () -> Unit = {},
     popularViewModel: PopularDishesViewModel? =
         if (LocalInspectionMode.current) null else composeViewModel()
 ) {
@@ -400,6 +402,33 @@ fun RestaurantDetailScreen(
                                     text = paymentsText,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = TextMuted
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedButton(
+                                onClick = onBestTimeToGo,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.2.dp, UniandesAmber),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    containerColor = UniandesAmber.copy(alpha = 0.08f),
+                                    contentColor = ShadowGrey
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Schedule,
+                                    contentDescription = "Best time to go",
+                                    tint = UniandesAmber,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Best time to go",
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                                    color = ShadowGrey
                                 )
                             }
                         }

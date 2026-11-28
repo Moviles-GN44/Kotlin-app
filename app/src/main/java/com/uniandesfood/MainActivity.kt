@@ -104,6 +104,7 @@ private const val SCREEN_SCAN_QR = 5
 private const val SCREEN_REVIEW = 6
 private const val SCREEN_GROUP = 7
 private const val SCREEN_MY_REVIEWS = 8
+private const val SCREEN_BEST_TIME = 9
 
 @Composable
 fun MainAppContainer(
@@ -137,7 +138,9 @@ fun MainAppContainer(
     }
 
     BackHandler(enabled = currentScreen != SCREEN_MAP) {
-        if (currentScreen in listOf(SCREEN_DETAIL, SCREEN_SCAN_QR, SCREEN_REVIEW, SCREEN_GROUP, SCREEN_MY_REVIEWS)){
+        if (currentScreen == SCREEN_BEST_TIME) {
+            currentScreen = SCREEN_DETAIL
+        } else if (currentScreen in listOf(SCREEN_DETAIL, SCREEN_SCAN_QR, SCREEN_REVIEW, SCREEN_GROUP, SCREEN_MY_REVIEWS)){
             navigateBack()
         } else {
             currentScreen = SCREEN_MAP
@@ -323,8 +326,19 @@ fun MainAppContainer(
                         onBack = navigateBack,
                         onScanQR = {
                             currentScreen = SCREEN_SCAN_QR
+                        },
+                        onBestTimeToGo = {
+                            currentScreen = SCREEN_BEST_TIME
                         }
                     )
+
+                    SCREEN_BEST_TIME -> {
+                        val selectedRestaurant by restaurantViewModel.selectedRestaurant.collectAsState()
+                        BestTimeToGoScreen(
+                            restaurant = selectedRestaurant,
+                            onBack = { currentScreen = SCREEN_DETAIL }
+                        )
+                    }
 
                     SCREEN_SCAN_QR -> ScanQrScreen(
                         onBack = navigateBack,
