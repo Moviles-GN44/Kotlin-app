@@ -309,4 +309,23 @@ class AnalyticsRepository(
             )
         )
     }
+        fun logGroupSuggestionChosen(
+        restaurantId: String,
+        position: Int,
+        waitTime: String,
+        rating: Double,
+        groupSize: Int
+    ) {
+        logEvent(
+            name = "karin_bq14_group_suggestion_chosen",
+            params = mapOf(
+                "bq_author" to "Karin",
+                "restaurant_id" to restaurantId,
+                "position" to position,
+                "wait_time" to waitTime,
+                "rating" to rating,
+                "group_size" to groupSize
+            )
+        )
+    }
 }

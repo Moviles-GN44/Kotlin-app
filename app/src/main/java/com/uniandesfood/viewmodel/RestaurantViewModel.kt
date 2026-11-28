@@ -47,6 +47,7 @@ class RestaurantViewModel(
         private set
 
     private var currentCriteria: FilterCriteria? = null
+    private var lastGroupSize = 0
 
     init {
         viewModelScope.launch {
@@ -85,9 +86,10 @@ class RestaurantViewModel(
         isGlutenFree: Boolean,
         budget: BudgetRange
     ) {
-        if (_isSuggesting.value) return 
+        if (_isSuggesting.value) return
         _isSuggesting.value = true
         val building = currentBuilding
+        lastGroupSize = groupSize
 
         viewModelScope.launch {
             val suggestions = withContext(Dispatchers.Default) {
@@ -101,7 +103,7 @@ class RestaurantViewModel(
                     selectedPayments = emptySet()
                 )
                 val matching = restaurantRepository.filterRestaurants(criteria)
-                
+
                 if (groupSize >= LARGE_GROUP_SIZE) {
                     matching
                         .filter { it.waitTimeCategory != WaitTimeCategory.LONG }
@@ -118,6 +120,18 @@ class RestaurantViewModel(
             _isSuggesting.value = false
             analyticsRepository.logGroupSuggestion(groupSize, suggestions.size, building)
         }
+    }
+
+    fun onGroupSuggestionChosen(restaurant: Restaurant) {
+        val list = _groupSuggestions.value ?: emptyList()
+        val position = list.indexOfFirst { it.id == restaurant.id } + 1
+        analyticsRepository.logGroupSuggestionChosen(
+            restaurantId = restaurant.id,
+            position = position,
+            waitTime = restaurant.waitTimeCategory.name,
+            rating = restaurant.rating,
+            groupSize = lastGroupSize
+        )
     }
 
     fun updateCurrentBuilding(building: String) {
@@ -141,7 +155,7 @@ class RestaurantViewModel(
     fun selectRestaurant(restaurantId: String) {
         val found = restaurantRepository.getRestaurantById(restaurantId)
         _selectedRestaurant.value = found
-        
+
         found?.let {
             analyticsRepository.logMenuInspection(
                 restaurantId = it.id,

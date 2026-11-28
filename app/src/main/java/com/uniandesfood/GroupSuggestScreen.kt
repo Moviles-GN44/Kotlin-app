@@ -142,7 +142,10 @@ fun GroupSuggestScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 6.dp)
-                            .clickable { onSelectRestaurant(restaurant) }
+                            .clickable {
+                                viewModel.onGroupSuggestionChosen(restaurant)
+                                onSelectRestaurant(restaurant)
+                            }
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Text(
