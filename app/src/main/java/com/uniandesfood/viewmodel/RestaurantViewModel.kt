@@ -32,9 +32,7 @@ class RestaurantViewModel(
     private val _selectedRestaurant = MutableStateFlow<Restaurant?>(restaurantRepository.getAllRestaurants().firstOrNull())
     val selectedRestaurant: StateFlow<Restaurant?> = _selectedRestaurant.asStateFlow()
 
-    private val _favorites = MutableStateFlow<Set<String>>(
-        LocalStore.getFavorites() ?: setOf("el_toro_rgd", "one_burrito_ml")
-    )
+    private val _favorites = MutableStateFlow<Set<String>>(emptySet())
     val favorites: StateFlow<Set<String>> = _favorites.asStateFlow()
 
     private val _groupSuggestions = MutableStateFlow<List<Restaurant>?>(null)
@@ -50,6 +48,13 @@ class RestaurantViewModel(
     private var lastGroupSize = 0
 
     init {
+        viewModelScope.launch {
+            val saved = withContext(Dispatchers.IO) {
+                LocalStore.getFavorites()
+            }
+            _favorites.value = saved ?: setOf("el_toro_rgd", "one_burrito_ml")
+        }
+
         viewModelScope.launch {
             restaurantRepository.restaurantsFlow.collect { list ->
                 if (currentCriteria != null) {
