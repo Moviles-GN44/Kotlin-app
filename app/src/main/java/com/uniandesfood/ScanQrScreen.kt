@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.FlashOff
+import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -94,7 +96,12 @@ fun ScanQrScreen(
             )
         }
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -191,8 +198,14 @@ fun ScanQrScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        Icon(
+                            imageVector = if (isTorchOn) Icons.Default.FlashOn else Icons.Default.FlashOff,
+                            contentDescription = "Flashlight",
+                            tint = if (isTorchOn) ShadowGrey else UniandesAmber,
+                            modifier = Modifier.size(18.dp)
+                        )
                         Text(
-                            text = if (isTorchOn) "🔦 Flashlight On" else "⚡ Turn on Flashlight",
+                            text = if (isTorchOn) "Flashlight On" else "Turn on Flashlight",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (isTorchOn) ShadowGrey else CardSurfaceWhite

@@ -67,9 +67,18 @@ class AuthViewModel(
     }
 
     fun onDisplayNameChange(newName: String) {
-        val trimmed = if (newName.length > 40) newName.take(40) else newName
+        // Allow only letters (including accents), spaces, hyphens and apostrophes — reject emojis & symbols
+        val sanitized = buildString(newName.length.coerceAtMost(40)) {
+            for (ch in newName) {
+                if (length >= 40) break
+                val isSurrogate = Character.isSurrogate(ch)
+                if (!isSurrogate && (ch.isLetter() || ch == ' ' || ch == '-' || ch == '\'')) {
+                    append(ch)
+                }
+            }
+        }
         _uiState.value = _uiState.value.copy(
-            displayName = trimmed,
+            displayName = sanitized,
             generalError = null
         )
     }
