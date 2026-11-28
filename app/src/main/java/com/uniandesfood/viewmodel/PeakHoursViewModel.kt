@@ -69,6 +69,11 @@ class PeakHoursViewModel(
                     "load_time_ms" to result.loadTimeMs
                 )
             )
+            analyticsRepository.logScreenLoadTime(
+                screenName = "Best Time to Go",
+                loadTimeMs = result.loadTimeMs,
+                fromCache = result.fromCache
+            )
         }
     }
 

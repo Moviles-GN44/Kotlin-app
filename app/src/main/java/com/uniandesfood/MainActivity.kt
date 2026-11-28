@@ -122,6 +122,32 @@ fun MainAppContainer(
     val isOnline by ConnectivityHelper.isOnlineFlow.collectAsState()
     var scannedRestaurant by remember { mutableStateOf<Restaurant?>(null) }
 
+    // Samuel's Sprint 4 BQ1: Measure screen loading time until first rendered frame
+    val screenStartNs = remember(currentScreen) { System.nanoTime() }
+    LaunchedEffect(currentScreen) {
+        withFrameNanos {
+            val elapsedMs = ((System.nanoTime() - screenStartNs) / 1_000_000L).coerceAtLeast(1L)
+            val screenName = when (currentScreen) {
+                SCREEN_MAP -> "Map"
+                SCREEN_EXPLORE -> "Explore"
+                SCREEN_FAVORITES -> "Favorites"
+                SCREEN_PROFILE -> "Profile"
+                SCREEN_DETAIL -> "Restaurant Detail"
+                SCREEN_SCAN_QR -> "QR Scanner"
+                SCREEN_REVIEW -> "Review"
+                SCREEN_GROUP -> "Suggest for a Group"
+                SCREEN_MY_REVIEWS -> "My Reviews"
+                SCREEN_BEST_TIME -> "Best Time to Go (UI)"
+                else -> "Other"
+            }
+            restaurantViewModel.logScreenLoadTime(
+                screenName = screenName,
+                loadTimeMs = elapsedMs,
+                fromCache = !isOnline
+            )
+        }
+    }
+
     LaunchedEffect(scannedRestaurant) {
         if (scannedRestaurant != null) {
             delay(800)
