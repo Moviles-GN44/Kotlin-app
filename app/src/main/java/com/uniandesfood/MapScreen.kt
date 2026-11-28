@@ -257,7 +257,6 @@ fun MapScreen(
                         shadowElevation = if (isSelected) 4.dp else 1.dp,
                         modifier = Modifier.clickable {
                             viewModel?.selectRestaurant(rest.id)
-                            webViewInstance?.evaluateJavascript("highlightRestaurant('${rest.id}')", null)
                         }
                     ) {
                         Row(

@@ -63,4 +63,10 @@ class AuthViewModelTest {
         assertEquals("Please enter a valid email format", viewModel.uiState.value.emailError)
         verify(authRepository, never()).resetPassword(any())
     }
+
+    @Test
+    fun `onDisplayNameChange rejects emojis and preserves accented letters`() {
+        viewModel.onDisplayNameChange("Sofía 😀🔥 Núñez 123!")
+        assertEquals("Sofía  Núñez ", viewModel.uiState.value.displayName)
+    }
 }

@@ -148,6 +148,7 @@ fun RestaurantDetailScreen(
                     onClick = onScanQR,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .navigationBarsPadding()
                         .padding(16.dp)
                         .height(52.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = UniandesAmber),
