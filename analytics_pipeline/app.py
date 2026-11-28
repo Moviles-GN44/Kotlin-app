@@ -134,6 +134,25 @@ def calculate_metrics(events):
     generic_count = sum(1 for e in b_events if e.get("params", {}).get("filter_mode") == "GENERIC_SEARCH")
     total_b_searches = building_count + generic_count
     building_pref_rate = round((building_count / total_b_searches) * 100, 1) if total_b_searches > 0 else "N/A"
+
+    # BQ14 - Karin: Group suggestion follow-up (chosen suggestion)
+    chosen_events = [e for e in events if e.get("eventName") == "karin_bq14_group_suggestion_chosen"]
+    suggest_sessions = set(e.get("params", {}).get("session_id") for e in group_events)
+    chosen_sessions = set(e.get("params", {}).get("session_id") for e in chosen_events)
+    follow_up_pct = round(len(chosen_sessions & suggest_sessions) / len(suggest_sessions) * 100, 1) if suggest_sessions else "N/A"
+    chosen_positions = {1: 0, 2: 0, 3: 0}
+    chosen_wait_times = {"FAST": 0, "MODERATE": 0, "LONG": 0}
+    chosen_ratings = []
+    for e in chosen_events:
+        params = e.get("params", {})
+        position = int(params.get("position", 0))
+        if position in chosen_positions:
+            chosen_positions[position] += 1
+        wait = params.get("wait_time", "")
+        if wait in chosen_wait_times:
+            chosen_wait_times[wait] += 1
+        chosen_ratings.append(float(params.get("rating", 0)))
+    avg_chosen_rating = round(sum(chosen_ratings) / len(chosen_ratings), 1) if chosen_ratings else "N/A"
     
     offline_events = [e for e in events if e.get("eventName") == "karin_bq_offline_reviews"]
     offline_count = sum(1 for e in offline_events if e.get("params", {}).get("was_offline", False))
@@ -218,6 +237,12 @@ def calculate_metrics(events):
             "individual_count": individual_count,
             "group_pct": group_pct,
             "avg_group_size": avg_group_size
+        },
+        "bq14_karin": {
+            "follow_up_pct": follow_up_pct,
+            "chosen_positions": chosen_positions,
+            "chosen_wait_times": chosen_wait_times,
+            "avg_chosen_rating": avg_chosen_rating
         },
         "bq_offline_karin": {
             "offline_reviews": offline_count,
