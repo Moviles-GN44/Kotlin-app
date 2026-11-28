@@ -41,17 +41,25 @@ def parse_firestore_value(val):
 
 def fetch_telemetry_events():
     try:
-        req = urllib.request.Request(FIRESTORE_URL, headers={"Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
-            docs = data.get("documents", [])
-            events = []
-            for doc in docs:
-                fields = doc.get("fields", {})
-                event = {k: parse_firestore_value(v) for k, v in fields.items()}
-                event["doc_id"] = doc.get("name", "").split("/")[-1]
-                events.append(event)
-            return sorted(events, key=lambda x: x.get("timestamp", 0), reverse=True)
+        events = []
+        next_page_token = None
+        for _ in range(5):
+            url = f"{FIRESTORE_URL}?pageSize=300"
+            if next_page_token:
+                url += f"&pageToken={urllib.request.quote(next_page_token)}"
+            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                docs = data.get("documents", [])
+                for doc in docs:
+                    fields = doc.get("fields", {})
+                    event = {k: parse_firestore_value(v) for k, v in fields.items()}
+                    event["doc_id"] = doc.get("name", "").split("/")[-1]
+                    events.append(event)
+                next_page_token = data.get("nextPageToken")
+                if not next_page_token:
+                    break
+        return sorted(events, key=lambda x: x.get("timestamp", 0), reverse=True)
     except Exception as e:
         print(f"Error fetching Firestore telemetry: {e}")
         return []
